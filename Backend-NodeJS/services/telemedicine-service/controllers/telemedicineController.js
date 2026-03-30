@@ -18,7 +18,7 @@ const getAxiosConfig = (req) => {
  * @access  Private (Doctor or Patient)
  */
 const createSession = async (req, res) => {
-    t
+    
 };
 
 /**
