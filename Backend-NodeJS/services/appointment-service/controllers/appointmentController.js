@@ -15,7 +15,28 @@ const getAxiosConfig = (req) => {
  * @access  Public
  */
 const searchDoctors = async (req, res) => {
-  
+
+  try {
+
+    const { specialty } = req.query;
+    let url = `${process.env.DOCTOR_SERVICE_URL}/api/doctors`;
+    
+    if (specialty) {
+      url += `?specialty=${encodeURIComponent(specialty)}`;
+    }
+
+    const response = await axios.get(url);
+
+    res.status(200).json({
+      message: 'Doctors fetched successfully',
+      data: response.data.data
+    });
+
+  } catch (error) {
+    console.error('Error fetching doctors:', error.message);
+    res.status(500).json({ message: 'Failed to fetch doctors', error: error.message });
+  }
+
 };
 
 /**
