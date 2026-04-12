@@ -15,7 +15,7 @@ const { protect, authorize } = require('../middleware/auth');
 router.get('/search', searchDoctors);
 
 // Internal/Webhook route for payment completion
-router.put('/:id/pay', markPaid);
+//router.put('/:id/pay', markPaid);
 
 // Protected routes
 router.use(protect);

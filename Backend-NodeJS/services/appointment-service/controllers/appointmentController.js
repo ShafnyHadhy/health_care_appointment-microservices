@@ -178,7 +178,6 @@ const getAppointmentStatus = async (req, res) => {
  */
 const cancelAppointment = async (req, res) => {
 
-
   try {
 
     const appointmentId = req.params.id;
@@ -208,7 +207,72 @@ const cancelAppointment = async (req, res) => {
  */
 const updateAppointmentStatus = async (req, res) => {
   
+  try {
+
+    const appointmentId = req.params.id;
+    const { status, isPaid } = req.body;
+
+    const appointment = await Appointment.findById(appointmentId);
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    if (status) {
+      appointment.status = status;
+    }
+
+    if (isPaid !== undefined) {
+      appointment.isPaid = isPaid;
+    }
+
+    await appointment.save();
+
+    // If marked as completed, trigger completion notification
+
+    // if (status === 'completed') {
+    //   try {
+    //     if (process.env.NOTIFICATION_SERVICE_URL) {
+    //        await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/completed`, {
+    //          appointmentId: appointment._id,
+    //          patientId: appointment.patientId,
+    //          doctorId: appointment.doctorId
+    //        });
+    //     }
+    //   } catch (notifyErr) {
+    //      console.warn('Completed Notification failed/not implemented', notifyErr.message);
+    //   }
+    // }
+
+    res.status(200).json({
+      message: 'Appointment status updated successfully',
+      data: appointment
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
 };
+
+/**
+ * @desc    Special route for Payment Service webhook to hit (mark paid)
+ * @route   PUT /api/appointments/:id/pay
+ * @access  Public (or tightly secured via firewall/IP in production)
+ */
+// const markPaid = async (req, res) => {
+//   try {
+//     const appointment = await Appointment.findById(req.params.id);
+//     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+//     appointment.isPaid = true;
+//     appointment.status = 'confirmed'; // automatically confirm when paid?
+//     await appointment.save();
+
+//     res.status(200).json({ message: 'Appointment marked as paid', data: appointment });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server Error', error: error.message });
+//   }
+// };
 
 module.exports = {
   searchDoctors,
@@ -217,5 +281,5 @@ module.exports = {
   getAppointmentStatus,
   cancelAppointment,
   updateAppointmentStatus,
-  markPaid
+  //markPaid
 };
