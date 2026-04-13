@@ -2,6 +2,8 @@ import { Route, Routes } from "react-router-dom";
 import Header from "../components/header";
 import HomeBody from "../components/homeBody";
 import Footer from "../components/footer";
+import FindDoctor from "./findDoctor";
+import PatientDashboard from "./patient/patientDashboard";
 
 export default function HomePage() {
     return (
@@ -14,9 +16,9 @@ export default function HomePage() {
                     </>
                 } />
 
-                {/* <Route path="product" element={<ProductPage />} /> 
-                <Route path="about" element={<AboutUs/>} />
-                <Route path="contact" element={<ContactUs/>} />
+                <Route path="find-doctor" element={<FindDoctor />} /> 
+                <Route path="patient-dashboard" element={<PatientDashboard/>} />
+                {/* <Route path="contact" element={<ContactUs/>} />
                 <Route path="overview/:id" element={<ProductOverview/>}/>
                 <Route path="cart" element={<CartPage/>}/>
                 <Route path="checkout" element={<CheckoutPage/>}/>
