@@ -22,11 +22,9 @@ export default function LoginPage() {
         { email, password }
       );
 
-      console.log(response.data);
-
-      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("token", response.data.data.token);
       
-      const user = response.data.data;
+      const user = response.data;
 
       console.log("Logged in user:", user);
 

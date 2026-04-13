@@ -1,8 +1,12 @@
 import { MdVerifiedUser, MdArrowForward, MdMedicalServices, MdVideocam, MdLaptopMac, MdPsychology, MdBolt } from 'react-icons/md';
+import { Link } from 'react-router-dom';
 
 const tealPulse = { background: 'linear-gradient(135deg, #006063 0%, #007b7f 100%)' };
 
 export default function HomeBody() {
+
+    const token = localStorage.getItem("token");
+
   return (
     
     <main className="font-body bg-neutral">
@@ -21,14 +25,27 @@ export default function HomeBody() {
               Bridging the gap between clinical excellence and digital convenience. Access specialists, manage health records, and receive AI-driven insights from anywhere.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <button style={tealPulse} className="text-white px-6 py-3.5 md:px-8 md:py-4 rounded-xl font-headline font-bold text-base md:text-lg shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
-                Register as Patient
-                <MdArrowForward className="text-xl" />
-              </button>
-              <button className="bg-white border-2 border-primary/10 text-primary px-6 py-3.5 md:px-8 md:py-4 rounded-xl font-headline font-bold text-base md:text-lg hover:bg-surface-container-low transition-all flex items-center justify-center gap-3">
-                Register as Doctor
-                <MdMedicalServices className="text-xl" />
-              </button>
+              {!token ? (
+               <>
+                 <button style={tealPulse} className="text-white px-6 py-3.5 md:px-8 md:py-4 rounded-xl font-headline font-bold text-base md:text-lg shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                  Register as Patient
+                  <MdArrowForward className="text-xl" />
+                </button>
+              
+                <button className="bg-white border-2 border-primary/10 text-primary px-6 py-3.5 md:px-8 md:py-4 rounded-xl font-headline font-bold text-base md:text-lg hover:bg-surface-container-low transition-all flex items-center justify-center gap-3">
+                    Register as Doctor
+                    <MdMedicalServices className="text-xl" />
+                </button>
+               </>
+              ) : (
+                <Link
+                    to="/dashboard" 
+                    style={tealPulse} className="text-white px-6 py-3.5 md:px-8 md:py-4 rounded-xl font-headline font-bold text-base md:text-lg shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                >
+                  Go to Dashboard
+                  <MdArrowForward className="text-xl" />
+                </Link>
+              )}
             </div>
           </div>
 
