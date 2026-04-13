@@ -2,7 +2,6 @@ const Stripe = require('stripe');
 const Payment = require('../models/Payment');
 const axios = require('axios');
 
-// We initialize Stripe later or inline to allow the server to start without the env var if testing locally
 let stripe;
 try {
     stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -16,7 +15,71 @@ try {
  * @access  Private
  */
 const createCheckoutSession = async (req, res) => {
-    
+    try {
+        const { appointmentId, amount } = req.body;
+
+        if (!appointmentId || !amount) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // --- DEVELOPMENT BYPASS ---
+        // Automatically bypass Stripe if we don't have a real API key configured
+        if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('...')) {
+            const payment = await Payment.create({
+                appointmentId,
+                patientId: req.user.id,
+                stripeSessionId: 'mock_session_' + Date.now(),
+                amount,
+                status: 'pending',
+            });
+
+            return res.status(200).json({
+                url: `http://localhost:5173/payment-status/${appointmentId}`, // auto redirect to status mockup
+                sessionId: payment.stripeSessionId,
+                payment,
+            });
+        }
+        // --------------------------
+
+        // Create Stripe session
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'lkr',
+                        product_data: {
+                            name: 'Doctor Appointment Payment',
+                        },
+                        unit_amount: amount * 100, // Stripe uses cents
+                    },
+                    quantity: 1,
+                },
+            ],
+            success_url: `http://localhost:5173/payment-status/${appointmentId}`,
+            cancel_url: `http://localhost:5173/cancel`,
+        });
+
+        // Save to DB
+        const payment = await Payment.create({
+            appointmentId,
+            patientId: req.user.id,
+            stripeSessionId: session.id,
+            amount,
+            status: 'pending',
+        });
+
+        res.status(200).json({
+            url: session.url,
+            sessionId: session.id,
+            payment,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error creating checkout session' });
+    }
 };
 
 /**
@@ -25,7 +88,50 @@ const createCheckoutSession = async (req, res) => {
  * @access  Public
  */
 const handleWebhook = async (req, res) => {
-    
+    const sig = req.headers['stripe-signature'];
+
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+    } catch (err) {
+        console.error('Webhook Error:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle event
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+
+        try {
+            const payment = await Payment.findOne({
+                stripeSessionId: session.id,
+            });
+
+            if (payment) {
+                payment.status = 'completed';
+                await payment.save();
+
+                // OPTIONAL: Notify appointment service
+                try {
+                    await axios.put(
+                        `http://localhost:3003/api/appointments/${payment.appointmentId}/payment`,
+                        { status: 'paid' }
+                    );
+                } catch (err) {
+                    console.warn('Appointment service not reachable');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating payment:', error);
+        }
+    }
+
+    res.status(200).json({ received: true });
 };
 
 /**
@@ -34,11 +140,113 @@ const handleWebhook = async (req, res) => {
  * @access  Private
  */
 const getPaymentStatus = async (req, res) => {
-    
+    try {
+        const payment = await Payment.findOne({
+            appointmentId: req.params.appointmentId,
+        });
+
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+
+        res.status(200).json({
+            status: payment.status,
+            amount: payment.amount,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching payment status' });
+    }
+};
+
+/**
+ * @desc    Get all payments
+ * @route   GET /api/payment
+ * @access  Private
+ */
+const getAllPayments = async (req, res) => {
+    try {
+        let payments;
+        if (req.user && req.user.role === 'admin') {
+            payments = await Payment.find({});
+        } else {
+            payments = await Payment.find({ patientId: req.user.id });
+        }
+        res.status(200).json(payments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching payments' });
+    }
+};
+
+/**
+ * @desc    Get payment by ID
+ * @route   GET /api/payment/:id
+ * @access  Private
+ */
+const getPaymentById = async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+        res.status(200).json(payment);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching payment' });
+    }
+};
+
+/**
+ * @desc    Update payment
+ * @route   PUT /api/payment/:id
+ * @access  Private/Admin
+ */
+const updatePayment = async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+        
+        const updatedPayment = await Payment.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+        res.status(200).json(updatedPayment);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error updating payment' });
+    }
+};
+
+/**
+ * @desc    Delete payment
+ * @route   DELETE /api/payment/:id
+ * @access  Private/Admin
+ */
+const deletePayment = async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+        await payment.deleteOne();
+        res.status(200).json({ message: 'Payment removed' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error deleting payment' });
+    }
 };
 
 module.exports = {
     createCheckoutSession,
     handleWebhook,
     getPaymentStatus,
+    getAllPayments,
+    getPaymentById,
+    updatePayment,
+    deletePayment,
 };
