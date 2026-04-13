@@ -14,6 +14,7 @@ export default function Header() {
         </div>
         <div className="flex items-center gap-4">
           <Link className="text-primary font-bold text-sm px-4 py-2 hover:bg-primary/10 rounded-lg transition-all" to="/login">Login</Link>
+          <Link className="text-on-surface hover:text-primary font-black uppercase tracking-widest text-[10px] transition-colors" to="/payment-history">Payments</Link>
           <Link 
             to="/role-selection"
             className="bg-primary text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow-sm hover:scale-[1.02] transition-all" 

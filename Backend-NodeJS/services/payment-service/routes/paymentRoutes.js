@@ -4,8 +4,12 @@ const {
     createCheckoutSession,
     handleWebhook,
     getPaymentStatus,
+    getAllPayments,
+    getPaymentById,
+    updatePayment,
+    deletePayment,
 } = require('../controllers/paymentController');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 // Note: Stripe Webhook needs the raw body to verify signatures. 
 // We use express.raw({type: 'application/json'}) just for this route.
@@ -17,5 +21,9 @@ router.post(
 
 router.post('/create-checkout-session', protect, createCheckoutSession);
 router.get('/status/:appointmentId', protect, getPaymentStatus);
+router.get('/', protect, getAllPayments);
+router.get('/:id', protect, getPaymentById);
+router.put('/:id', protect, authorize('admin'), updatePayment);
+router.delete('/:id', protect, authorize('admin'), deletePayment);
 
 module.exports = router;
