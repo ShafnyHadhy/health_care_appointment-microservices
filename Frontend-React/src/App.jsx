@@ -4,6 +4,9 @@ import HomePage from './pages/homePage'
 import LoginPage from './pages/loginPage'
 import { Toaster } from 'react-hot-toast'
 import ProviderPage from './pages/providerPage'
+import RoleSelection from './components/roleSelection'
+import PatientRegister from './components/patientRegister'
+import DoctorRegister from './components/doctorRegister'
 
 function App() {
 
@@ -17,7 +20,9 @@ function App() {
         <Routes path="/">
 
           <Route path="/*" element={<HomePage />} />
-          <Route path="/register" element={<h1 className="text-3xl font-bold">Register</h1>} />
+          <Route path="/patient-register" element={<PatientRegister />} />
+          <Route path="/doctor-register" element={<DoctorRegister />} />
+          <Route path="/role-selection" element={<RoleSelection />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/admin/*" element={<AdminPage />} />
           <Route path="/provider/*" element={<ProviderPage />} />
