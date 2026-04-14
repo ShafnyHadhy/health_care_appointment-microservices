@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Star, 
@@ -16,112 +17,109 @@ import {
   FileText,
   UserCircle
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import axios from 'axios';
+import { useState } from 'react';
 
 export default function FindDoctor() {
-  const doctors = [
-    {
-      name: "Dr. Julian Rivera",
-      specialty: "Pediatric Cardiology",
-      rating: "4.9",
-      fee: "$75",
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDTypzQWtsqKTSvWV0vrlbFdtQz-UrQcK2MYdepdwhm8cGIVvNt-qQM2cuZgMNZJG5J88iZkLtJQjwMtKZWSFsTu7Qe4gFjm4N-x-JlyiMgxYVUIkJ59d4vdTq4CYZD65Rs0tXcTBpyjRuuc5MUVSyXOV2ZZdft87ZcQ9KAfvoe79B7guioiioJspfjPGZVayPJnypy0oD2iagt9oEp_629LwtYNKhagtPRy0MccG1vlz8FhRD3jDtjlxHHpjqAvFISii4Q_sLxSGk",
-      tags: [
-        { icon: <ShieldCheck size={14} />, label: "Accepts Aetna" },
-        { icon: <MapPin size={14} />, label: "2.4 miles away" }
-      ],
-      availability: null
-    },
-    {
-      name: "Dr. Sarah Jenkins",
-      specialty: "General Pediatrics",
-      rating: "4.8",
-      fee: "$50",
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD7AZsaTOVtI_AOJe8RD1AqLlJhH1uenMGrK42mEULorxjGG8d9UF0ZBaouSX8ytS-xZNgdSE8hclMfJu6YBKpCv3duD1b6-UqonxRXVO0ObYI1_hwiHqjJ95XE3L1dP0DkDcI8l0NjO7Ja309DMLV3E9YEdHm3rwASiJG70emjMdYXx76pllX3miG4lSv5kzO9Zb94hrC9TQlBmXPyHtSz6R011YOo-s9zunjuCsgpomOJfo9PjBCxczsgei5jgVGp9Yxexjvi-SM",
-      tags: [
-        { icon: <Languages size={14} />, label: "Spanish, English" }
-      ],
-      availability: "Available Today"
-    },
-    {
-      name: "Dr. Michael Chen",
-      specialty: "Pediatric Endocrinology",
-      rating: "5.0",
-      fee: "$120",
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBG0ezZtaLsRmYGjZLM9MIrXwNrZCZfe5oI2lE9QApv0NNOajvnlBF8SffgKSLKI-a6LYjm1gUCyTDq5wEKc-8VpknlstEhVyziSFSIsrJ2I4abTLJ3vPlaIXT9wbu7QystEfyCr4KfsdBJOQnbEF0aDl-YyXEG__Vae90ICI_PlaGtd-Udg-AUbo9DccAjD7Ofxy7qunlJbMV7CWICWqn0D3yRWbzTNzNE6htgOZwZcXBAbwcOaOVfQfNgaOdlCm7O9MkpQowOGP0",
-      tags: [
-        { icon: <Video size={14} />, label: "Virtual Visit" },
-        { icon: <Users size={14} />, label: "15+ yrs exp" }
-      ],
-      availability: null
-    },
-    {
-      name: "Dr. Elena Petrova",
-      specialty: "Pediatric Neurology",
-      rating: "4.7",
-      fee: "$110",
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCvBjue46sFbNUekRSotgMDyhzjgz-obiMgLrDRWeqUd1X3zfhij825zQjrd6OHxseZTUOl-444VZDLLNLl0eA63tRQaV3shCUf-BdcGt1FCk3n3YUJhcFQaT37M5xi1T27fAGxOkW7Nwe0dUuzuvoyIcoQHfooPRVubfoVsGvAv0bBeF9c2gwWdlh2hOw37HDEPbUFGPpovT7YYOtbZKKGr3YGVTAb1F8ppdAxszMe7cWe7J6eHGPtj8b1ytCoEeYfBUJ2MCMI6Es",
-      tags: [
-        { icon: <Award size={14} />, label: "Top Rated 2023" },
-        { icon: <Stethoscope size={14} />, label: "Board Certified" }
-      ],
-      availability: null
+
+  const navigate = useNavigate();
+  const [allDoctors, setAllDoctors] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+
+  const filteredDoctors = allDoctors.filter(doc => {
+    const matchesSpecialty = selectedSpecialty === 'All' || doc.specialty?.toLowerCase() === selectedSpecialty.toLowerCase();
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchLower || 
+      doc.name?.toLowerCase().includes(searchLower) || 
+      doc.specialty?.toLowerCase().includes(searchLower);
+    return matchesSpecialty && matchesSearch;
+  });
+
+  useEffect(() => {
+
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      toast.error('Please log in to view doctors');
+      navigate('/login');
+      return;
     }
-  ];
+
+    const fetchDoctors = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/doctors`)
+        const doctorsFromApi = response.data.data;
+
+        const mappedDoctors = doctorsFromApi.map((d) => {
+
+          let availabilityText = null;
+          
+          if (Array.isArray(d.availability) && d.availability.length > 0) {
+            availabilityText = 'Available Today';
+          }
+
+          return {
+            ...d,
+            availability: availabilityText,
+            tags: [
+              ...(d.isVerified
+                ? [{ icon: <Verified size={14} />, label: 'Verified doctor' }]
+                : []),
+              { icon: <MapPin size={14} />, label: 'Online' },
+            ],
+          };
+        });
+
+        console.log('Mapped doctors:', mappedDoctors);
+        setAllDoctors(mappedDoctors);
+        toast.success('Doctors fetched successfully');
+
+      } catch (error) {
+        toast.error('Failed to fetch doctors', error);
+      }
+    }
+
+    fetchDoctors();
+
+  }, []);
 
   return (
     <div className="bg-neutral font-body text-on-surface">
-      <main className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen px-8 py-8 gap-8">
+      <main className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen px-8 py-8 gap-8 items-start">
         
         {/* Filter Sidebar */}
-        <aside className="w-full md:w-64 lg:w-72 shrink-0">
-          <div className="sticky top-24 bg-white p-5 rounded-md space-y-6 border border-gray-200 shadow-sm">
+        <aside className="w-full md:w-64 lg:w-72 shrink-0 sticky top-8">
+          <div className="bg-white p-5 rounded-xl space-y-6 border border-gray-200 shadow-sm max-h-[calc(100vh-4rem)] overflow-y-auto hover:scrollbar-thin">
             <div className="flex items-center justify-between">
               <h2 className="font-headline font-bold text-xl text-primary">Filters</h2>
-              <button className="text-sm font-semibold text-primary/70 hover:text-primary">Clear all</button>
+              <button 
+                onClick={() => { setSelectedSpecialty('All'); setSearchQuery(''); }}
+                className="text-sm font-semibold text-primary/70 hover:text-primary"
+              >
+                Clear all
+              </button>
             </div>
 
             {/* Specialty */}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Specialty</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Specialty</h3>
               <div className="space-y-2">
-                {['Cardiology', 'Pediatrics', 'Dermatology', 'Neurology'].map((spec) => (
-                  <label key={spec} className="flex items-center group cursor-pointer">
+                {['All', 'Cardiology', 'Pediatrics', 'Dermatology', 'Neurology', 'Psychiatry', 'Orthopedics', 'Ophthalmology', 'Gastroenterology'].map((spec) => (
+                  <label key={spec} className="flex items-center group cursor-pointer" onClick={(e) => e.stopPropagation()}>
                     <input 
-                      type="checkbox" 
-                      defaultChecked={spec === 'Pediatrics'}
-                      className="rounded text-primary focus:ring-primary mr-3 h-5 w-5 border-outline-variant bg-surface-container-lowest" 
+                      type="radio" 
+                      name="specialty"
+                      checked={selectedSpecialty === spec}
+                      onChange={() => setSelectedSpecialty(spec)}
+                      className="text-primary focus:ring-primary mr-3 h-4 w-4 border-outline-variant bg-surface-container-lowest" 
                     />
-                    <span className={`text-on-surface transition-colors ${spec === 'Pediatrics' ? 'font-semibold' : 'group-hover:text-primary'}`}>
+                    <span className={`text-black text-sm transition-colors ${selectedSpecialty === spec ? 'font-semibold text-primary' : 'group-hover:text-primary'}`}>
                       {spec}
                     </span>
                   </label>
                 ))}
-              </div>
-            </div>
-
-            {/* Availability */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Availability</h3>
-              <div className="flex flex-wrap gap-2">
-                <button className="px-4 py-2 rounded-md text-xs font-semibold bg-primary text-on-primary">Today</button>
-                <button className="px-4 py-2 rounded-md text-xs font-semibold bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors">This Week</button>
-                <button className="px-4 py-2 rounded-md text-xs font-semibold bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors">Next Week</button>
-              </div>
-            </div>
-
-            {/* Fee Range */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Consultation Fee</h3>
-                <span className="text-xs font-bold text-primary">$20 - $250</span>
-              </div>
-              <input 
-                type="range" 
-                className="w-full h-1 bg-outline-variant rounded-lg appearance-none cursor-pointer accent-primary" 
-              />
-              <div className="flex justify-between text-[10px] text-outline">
-                <span>$20</span>
-                <span>$500+</span>
               </div>
             </div>
 
@@ -143,51 +141,50 @@ export default function FindDoctor() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h1 className="font-headline text-2xl font-bold text-gray-900 tracking-tight">Find Specialists</h1>
-              <p className="text-gray-500 mt-1 text-sm">24 pediatricians available in your network.</p>
+              <p className="text-gray-500 mt-1 text-sm">{filteredDoctors.length} doctors available in your network.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-500">Sort by:</span>
-              <button className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-md border border-gray-200 font-semibold text-sm hover:bg-gray-50 transition-colors text-gray-700 shadow-sm">
-                Highest Rating
-                <ChevronDown size={16} />
-              </button>
+            <div className="flex-1 max-w-md relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by doctor name, specialty, or condition..." 
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-shadow"
+              />
             </div>
           </div>
 
           {/* Doctor Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {doctors.map((doc, i) => (
-              <div key={i} className="bg-white p-4 rounded-md transition-all duration-300 hover:shadow-sm flex flex-col sm:flex-row gap-4 group border border-gray-200 hover:border-primary/30">
-                <div className="w-full sm:w-36 h-40 sm:h-auto rounded-md overflow-hidden relative border border-gray-100">
-                  <img src={doc.image} alt={doc.name} className="w-full h-full object-cover" />
-                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm border border-gray-100">
-                    <Star size={12} className="text-yellow-500 fill-yellow-500" />
-                    <span className="text-xs font-bold text-gray-900">{doc.rating}</span>
-                  </div>
+            {filteredDoctors.map((doc, i) => (
+              <div key={i} className="bg-white p-4 rounded-xl transition-all duration-200 hover:shadow-md flex flex-row items-start gap-4 group border border-gray-100 hover:border-primary/40">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative border border-gray-200 shadow-sm mt-1">
+                  <img src="/user.jpg" alt={doc.name} className="w-full h-full object-cover" />
                 </div>
 
-                <div className="grow flex flex-col justify-between py-0.5">
+                <div className="grow flex flex-col justify-between min-w-0">
                   <div>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-headline text-lg font-bold text-gray-900">{doc.name}</h3>
-                        <p className="text-primary font-medium text-sm">{doc.specialty}</p>
+                    <div className="flex justify-between items-start gap-2">
+                       <div className="truncate">
+                        <h3 className="font-headline text-base font-bold text-gray-900 truncate">{doc.name}</h3>
+                        <p className="text-primary font-medium text-[13px] truncate">{doc.specialty}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Fee</p>
-                        <p className="text-lg font-bold text-gray-900">{doc.fee}</p>
+                      <div className="text-right shrink-0">
+                        <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Fee</p>
+                        <p className="text-sm font-bold text-gray-900">{doc.consultationFee}</p>
                       </div>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap gap-1.5">
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {doc.availability && (
-                        <span className="bg-green-50 px-2 py-1 rounded text-[10px] font-bold text-green-700 flex items-center gap-1 border border-green-100">
-                          <Calendar size={12} />
+                        <span className="bg-green-50 px-2 py-0.5 rounded text-[10px] font-bold text-green-700 flex items-center gap-1 border border-green-100">
+                          <Calendar size={10} />
                           {doc.availability}
                         </span>
                       )}
-                      {doc.tags.map((tag, idx) => (
-                        <span key={idx} className="bg-gray-50 px-2 py-1 rounded text-[10px] font-medium text-gray-600 flex items-center gap-1 border border-gray-100">
+                      {(doc.tags || []).map((tag, idx) => (
+                        <span key={idx} className="bg-gray-50 px-2 py-0.5 rounded text-[10px] font-medium text-gray-600 flex items-center gap-1 border border-gray-100">
                           {tag.icon}
                           {tag.label}
                         </span>
@@ -195,12 +192,12 @@ export default function FindDoctor() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex gap-2">
-                    <button className="flex-1 py-1.5 px-3 rounded-md font-semibold text-xs border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
-                      View Profile
+                  <div className="mt-3.5 flex gap-2">
+                    <button className="flex-1 py-1.5 px-2 rounded-md font-semibold text-[11px] border border-gray-200 text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors uppercase tracking-wide">
+                      Profile
                     </button>
                     <button 
-                      className="bg-primary flex-1 py-1.5 px-3 rounded-md font-semibold text-xs text-white shadow-sm hover:opacity-90 active:scale-95 transition-all"
+                      className="bg-primary flex-[1.5] py-1.5 px-2 rounded-md font-semibold text-[11px] text-white shadow-sm hover:opacity-90 active:scale-95 transition-all uppercase tracking-wide"
                     >
                       Book Now
                     </button>
@@ -210,13 +207,6 @@ export default function FindDoctor() {
             ))}
           </div>
 
-          {/* Load More Button */}
-          <div className="flex justify-center pt-4">
-            <button className="group flex items-center gap-2 bg-white border border-gray-200 shadow-sm px-4 py-2 rounded-md font-semibold text-xs text-primary hover:bg-gray-50 transition-all duration-300">
-              Load more specialists
-              <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
-            </button>
-          </div>
         </section>
       </main>
 
@@ -240,24 +230,5 @@ export default function FindDoctor() {
         </a>
       </nav>
     </div>
-  );
-}
-
-// Sub-component for icons used in mappings
-function ShieldCheck({ size }) {
-  return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }
