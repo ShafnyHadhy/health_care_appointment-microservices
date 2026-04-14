@@ -211,6 +211,7 @@ const getAvailableSlots = async (req, res) => {
     const bookedSlots = appointments.map(a => a.timeSlot);
 
     const generateSlots = (start, end) => {
+      
       const slots = [];
       let current = new Date(`1970-01-01T${start}`);
 
