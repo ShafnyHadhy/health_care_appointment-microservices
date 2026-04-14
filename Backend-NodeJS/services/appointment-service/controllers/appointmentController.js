@@ -80,7 +80,7 @@ const bookAppointment = async (req, res) => {
 
     }
 
-    const appointment = Appointment.create({
+    const appointment = await Appointment.create({
       patientId,
       patientName,
       doctorId,
@@ -126,6 +126,8 @@ const getUserAppointments = async (req, res) => {
     const role = req.user.role;
     const userId = req.user.id;
 
+    console.log(`Fetching appointments for user ${userId} with role ${role}`);
+
     let query = {};
     if (role === 'patient') {
       query.patientId = userId;
@@ -170,6 +172,81 @@ const getAppointmentStatus = async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
+
+/**
+ * @desc    Get available slots for a doctor on a given date
+ * @route   GET /api/appointments/slots
+ * @access  Public
+ */
+const getAvailableSlots = async (req, res) => {
+  try {
+    const { doctorId, date } = req.query;
+
+    if (!doctorId || !date) {
+      return res.status(400).json({ message: 'doctorId and date required' });
+    }
+
+    const doctorRes = await axios.get(
+      `${process.env.DOCTOR_SERVICE_URL}/api/doctors`
+    );
+
+    const doctor = doctorRes.data.data.find(d => d._id === doctorId);
+
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+    const dayName = new Date(date).toLocaleString('en-US', { weekday: 'long' });
+
+    const dayAvailability = doctor.availability.find(a => a.day === dayName);
+
+    if (!dayAvailability) {
+      return res.json({ date, slots: [] });
+    }
+
+    const appointments = await Appointment.find({
+      doctorId,
+      date: new Date(date),
+      status: { $ne: 'cancelled' }
+    });
+
+    const bookedSlots = appointments.map(a => a.timeSlot);
+
+    const generateSlots = (start, end) => {
+      const slots = [];
+      let current = new Date(`1970-01-01T${start}`);
+
+      const endTime = new Date(`1970-01-01T${end}`);
+
+      while (current < endTime) {
+        const next = new Date(current.getTime() + 30 * 60000);
+
+        const slotString = `${current.toTimeString().slice(0,5)} - ${next.toTimeString().slice(0,5)}`;
+
+        slots.push({
+          time: slotString,
+          status: bookedSlots.includes(slotString) ? 'booked' : 'available'
+        });
+
+        current = next;
+      }
+
+      return slots;
+    };
+
+    const slots = generateSlots(
+      dayAvailability.startTime,
+      dayAvailability.endTime
+    );
+
+    res.status(200).json({
+      message: 'Slots fetched',
+      date,
+      slots
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+}
 
 /**
  * @desc    Modify or cancel appointment
@@ -285,5 +362,6 @@ module.exports = {
   getAppointmentStatus,
   cancelAppointment,
   updateAppointmentStatus,
-  markPaid
+  markPaid,
+  getAvailableSlots
 };
