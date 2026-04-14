@@ -7,15 +7,19 @@ const {
   getAppointmentStatus,
   cancelAppointment,
   updateAppointmentStatus,
-  markPaid
+  markPaid,
+  getAvailableSlots
 } = require('../controllers/appointmentController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Public route to search doctors (it just forwards to doctor service conceptually)
 router.get('/search', searchDoctors);
 
+// New route to fetch available slots for a doctor on a specific date
+router.get('/slots', getAvailableSlots);
+
 // Internal/Webhook route for payment completion
-router.put('/:id/pay', markPaid);
+router.put('/:id/payment', markPaid); 
 
 // Protected routes
 router.use(protect);

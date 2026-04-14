@@ -1,20 +1,36 @@
 import { Route, Routes } from "react-router-dom";
 import Header from "../components/header";
+import HomeBody from "../components/homeBody";
+import Footer from "../components/footer";
+import FindDoctor from "./findDoctor";
+import PatientDashboard from "./patient/patientDashboard";
 
 export default function HomePage() {
     return (
-        <div className="w-full h-full">
-
+        <div>
             <Header/>
+            <Routes>
+                <Route index element={
+                    <>
+                        <HomeBody/>
+                    </>
+                } />
 
-            <Routes path="/">
-                <Route path="/" element={<h1 className="text-3xl font-bold text-primary">Welcome to the Home Page</h1>} />
-                <Route path="/products" element={<h1 className="text-3xl font-bold text-primary">Products Page</h1>} />
-                <Route path="/about" element={<h1 className="text-3xl font-bold text-primary">About Page</h1>} />
-                <Route path="/contact" element={<h1 className="text-3xl font-bold text-primary">Contact Page</h1>} />
-                <Route path="/*" element={<h1 className="text-3xl font-bold text-primary">404 Not Found</h1>} />
+                <Route path="find-doctor" element={<FindDoctor />} /> 
+                <Route path="patient-dashboard" element={<PatientDashboard/>} />
+                {/* <Route path="contact" element={<ContactUs/>} />
+                <Route path="overview/:id" element={<ProductOverview/>}/>
+                <Route path="cart" element={<CartPage/>}/>
+                <Route path="checkout" element={<CheckoutPage/>}/>
+                <Route path="feedback" element={<SubmitFeedback />} />
+                <Route path="profile" element={<UserProfile />} />
+                <Route path="orders/id/:orderID" element={<ViewOrder />} /> */}
+
+                <Route path="*" element={<h1>404 not found</h1>} />
             </Routes>
-
+            
+            <Footer/>
         </div>
     )
 }
+

@@ -45,12 +45,10 @@ const registerDoctor = async (req, res) => {
         });
       } catch (authError) {
         await Doctor.findByIdAndDelete(doctor._id);
-        return res
-          .status(500)
-          .json({
-            message: "Failed to create auth credentials",
-            error: authError.message,
-          });
+        return res.status(500).json({
+          message: "Failed to create auth credentials",
+          error: authError.message,
+        });
       }
     }
   } catch (error) {
@@ -194,12 +192,10 @@ const issuePrescription = async (req, res) => {
       notes,
     });
 
-    res
-      .status(201)
-      .json({
-        message: "Prescription issued successfully",
-        data: prescription,
-      });
+    res.status(201).json({
+      message: "Prescription issued successfully",
+      data: prescription,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
