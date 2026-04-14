@@ -22,8 +22,8 @@ export default function Header() {
         <div className="flex items-center gap-8">
           <div className="flex flex-row items-center gap-2">
             <img src="/logo.png" alt="Logo" className="w-14 h-10 rounded-md object-cover" />
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="text-xl font-black text-primary tracking-tight font-headline pt-2"
             >
               Care<span className="text-secondary">Bridge</span>
@@ -33,16 +33,19 @@ export default function Header() {
             <NavLink end className={({ isActive }) => `font-label text-sm transition-colors ${isActive ? "text-primary font-semibold" : "text-gray-600 hover:text-primary"}`} to="/">Home</NavLink>
             <NavLink className={({ isActive }) => `font-label text-sm transition-colors ${isActive ? "text-primary font-semibold" : "text-gray-600 hover:text-primary"}`} to={token ? "/patient-dashboard" : "/services"}>{nav1}</NavLink>
             <NavLink className={({ isActive }) => `font-label text-sm transition-colors ${isActive ? "text-primary font-semibold" : "text-gray-600 hover:text-primary"}`} to={token ? "/find-doctor" : "/resources"}>{nav2}</NavLink>
+            {token && (
+              <NavLink className={({ isActive }) => `font-label text-sm transition-colors ${isActive ? "text-primary font-semibold" : "text-gray-600 hover:text-primary"}`} to="/payment-history">Payments</NavLink>
+            )}
             <NavLink className={({ isActive }) => `font-label text-sm transition-colors ${isActive ? "text-primary font-semibold" : "text-gray-600 hover:text-primary"}`} to={token ? "/profile" : "/about"}>{nav3}</NavLink>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          { !token ? (
+          {!token ? (
             <>
               <Link className="text-gray-700 font-semibold text-sm px-4 py-2 flex items-center justify-center hover:bg-gray-50 rounded-md transition-all border border-transparent hover:border-gray-200" to="/login">Login</Link>
-              <Link 
+              <Link
                 to="/role-selection"
-                className="flex items-center justify-center bg-primary text-white font-semibold text-sm px-5 py-2 rounded-md shadow-sm hover:opacity-90 transition-all" 
+                className="flex items-center justify-center bg-primary text-white font-semibold text-sm px-5 py-2 rounded-md shadow-sm hover:opacity-90 transition-all"
                 style={{ background: '#006063' }}
               >
                 Get Started
@@ -50,7 +53,7 @@ export default function Header() {
             </>
           ) : (
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-2 hover:bg-gray-50 p-1.5 pr-3 rounded-xl transition-all border border-transparent hover:border-gray-200"
               >
@@ -70,14 +73,14 @@ export default function Header() {
                   <div className="px-4 py-2 border-b border-gray-100 mb-1.5">
                     <p className="text-xs font-label font-bold text-gray-500 uppercase tracking-wide">My Account</p>
                   </div>
-                  <Link 
-                    to="/settings" 
+                  <Link
+                    to="/settings"
                     className="px-4 py-2 text-sm font-label text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors text-left"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Settings
                   </Link>
-                  <button 
+                  <button
                     onClick={() => {
                       setIsDropdownOpen(false);
                       handleLogout();

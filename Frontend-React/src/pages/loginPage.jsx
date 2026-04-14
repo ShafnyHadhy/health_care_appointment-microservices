@@ -24,7 +24,7 @@ export default function LoginPage() {
 
       localStorage.setItem("token", response.data.data.token);
       
-      const user = response.data;
+      const user = response.data.data;
 
       console.log("Logged in user:", user);
 
