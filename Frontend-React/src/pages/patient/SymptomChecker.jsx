@@ -171,90 +171,195 @@ export default function SymptomChecker() {
     };
 
     const downloadDossier = () => {
-        const element = document.getElementById('clinical-report-content');
-        if (!element) { alert('Report not found. Please try again.'); return; }
-
-        const printWindow = window.open('', '_blank', 'width=800,height=900');
+        if (!aiResult) { alert('No report data. Please run analysis first.'); return; }
+        const printWindow = window.open('', '_blank', 'width=860,height=1000');
         if (!printWindow) { alert('Pop-up blocked. Please allow pop-ups for this site.'); return; }
 
-        const css = [
-            '* { box-sizing: border-box; margin: 0; padding: 0; }',
-            '@page { margin: 0.5in; size: A4; }',
-            'body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: white; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 24px; }',
-            'table { border-collapse: collapse; width: 100%; }',
-            'th, td { border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 11px; }',
-            'thead tr { background-color: #f1f5f9; }',
-            '.grid { display: grid; gap: 16px; }',
-            '.grid-cols-2 { grid-template-columns: 1fr 1fr; }',
-            '.grid-cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }',
-            '.col-span-3 { grid-column: span 3; }',
-            '.flex { display: flex; }',
-            '.items-center { align-items: center; }',
-            '.justify-between { justify-content: space-between; }',
-            '.gap-3 { gap: 12px; }',
-            '.gap-4 { gap: 16px; }',
-            '.gap-5 { gap: 20px; }',
-            '.p-4 { padding: 16px; }',
-            '.p-5 { padding: 20px; }',
-            '.p-6 { padding: 24px; }',
-            '.pt-4 { padding-top: 16px; }',
-            '.pb-4 { padding-bottom: 16px; }',
-            '.mb-1 { margin-bottom: 4px; }',
-            '.mt-2 { margin-top: 8px; }',
-            '.space-y-4 > * + * { margin-top: 16px; }',
-            '.space-y-6 > * + * { margin-top: 24px; }',
-            '.border { border: 1px solid #e2e8f0; }',
-            '.border-b-2 { border-bottom: 2px solid; }',
-            '.border-black { border-color: #000; }',
-            '.border-l-4 { border-left: 4px solid; }',
-            '.border-blue-600 { border-color: #2563eb; }',
-            '.border-slate-200 { border-color: #e2e8f0; }',
-            '.border-slate-100 { border-color: #f1f5f9; }',
-            '.border-t { border-top: 1px solid #e2e8f0; }',
-            '.bg-blue-50 { background-color: #eff6ff; }',
-            '.bg-slate-50 { background-color: #f8fafc; }',
-            '.bg-slate-100 { background-color: #f1f5f9; }',
-            '.bg-slate-800 { background-color: #1e293b; }',
-            '.bg-blue-600 { background-color: #2563eb; }',
-            '.bg-white { background-color: #fff; }',
-            '.bg-black { background-color: #000; }',
-            '.text-black { color: #000; }',
-            '.text-white { color: #fff; }',
-            '.text-blue-600 { color: #2563eb; }',
-            '.text-amber-600 { color: #d97706; }',
-            '.text-slate-800 { color: #1e293b; }',
-            '.text-slate-500 { color: #64748b; }',
-            '.text-slate-400 { color: #94a3b8; }',
-            '.font-bold { font-weight: 700; }',
-            '.font-medium { font-weight: 500; }',
-            '.text-xl { font-size: 20px; }',
-            '.text-sm { font-size: 14px; }',
-            '.text-xs { font-size: 12px; }',
-            '.uppercase { text-transform: uppercase; }',
-            '.italic { font-style: italic; }',
-            '.underline { text-decoration: underline; }',
-            '.leading-relaxed { line-height: 1.625; }',
-            '.leading-snug { line-height: 1.375; }',
-            '.tracking-widest { letter-spacing: 0.1em; }',
-            '.tracking-tight { letter-spacing: -0.025em; }',
-            '.w-9 { width: 36px; }',
-            '.w-12 { width: 48px; }',
-            '.h-9 { height: 36px; }',
-            '.h-12 { height: 48px; }',
-            '.w-14 { width: 56px; }',
-            '.h-14 { height: 56px; }',
-            '.text-right { text-align: right; }',
-            '.relative { position: relative; }',
-            '.absolute { position: absolute; }',
-            '.inset-0 { top: 0; left: 0; right: 0; bottom: 0; }',
-            '.shrink-0 { flex-shrink: 0; }',
-            '.overflow-hidden { overflow: hidden; }',
-            'svg { display: inline-block; vertical-align: middle; }',
-        ].join('\n');
+        const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const confidence = parseInt(aiResult.certainty) || 0;
+        const circumference = 100;
+        const dashArray = `${confidence} ${circumference}`;
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Clinical Report - ${aiResult.condition}</title>
+<style>
+  @page { margin: 0.6in; size: A4 portrait; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 12px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* HEADER */
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-icon { width: 40px; height: 40px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .header-icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; }
+  .header-title { font-size: 20px; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: -0.5px; }
+  .header-sub { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .header-right .label { font-size: 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+  .header-right .value { font-size: 12px; font-weight: 700; color: #000; }
+
+  /* SUMMARY */
+  .summary { background: #eff6ff; border-left: 4px solid #2563eb; padding: 14px 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0; }
+  .summary .label { font-size: 8px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .summary p { font-size: 12px; color: #1e293b; line-height: 1.7; }
+  .summary strong { color: #000; font-weight: 700; }
+
+  /* TWO COL GRID */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+  /* ACTIONS BOX */
+  .actions-box { border: 1px solid #e2e8f0; padding: 18px; border-radius: 6px; }
+  .section-title { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 14px; }
+  .action-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+  .action-number { font-size: 22px; font-weight: 800; color: #dbeafe; line-height: 1; flex-shrink: 0; }
+  .action-label { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .action-text { font-size: 12px; font-weight: 600; color: #1e293b; line-height: 1.5; }
+  .action-divider { border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 2px; }
+  .action-text.recovery { font-weight: 400; color: #475569; }
+
+  /* TABLE */
+  .table-box { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #1e293b; }
+  thead th { padding: 10px 14px; font-size: 9px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1px; text-align: left; }
+  thead th:last-child { text-align: right; }
+  tbody tr { border-bottom: 1px solid #f1f5f9; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 14px; font-size: 11px; color: #64748b; }
+  tbody td:last-child { text-align: right; font-weight: 700; }
+  .val-blue { color: #2563eb; }
+  .val-amber { color: #d97706; }
+  .val-black { color: #000; }
+
+  /* BOTTOM ROW */
+  .bottom-row { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 20px; }
+
+  /* CHART */
+  .chart-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; }
+  .chart-label { font-size: 7px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center; }
+  .chart-container { position: relative; width: 70px; height: 70px; }
+  .chart-container svg { width: 70px; height: 70px; transform: rotate(-90deg); }
+  .chart-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #000; }
+
+  /* SPECIALIST */
+  .specialist-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; display: flex; align-items: center; gap: 16px; }
+  .specialist-icon { width: 48px; height: 48px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+  .specialist-label { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .specialist-name { font-size: 15px; font-weight: 800; color: #000; }
+  .specialist-note { font-size: 9px; color: #94a3b8; margin-top: 3px; }
+
+  /* FOOTER */
+  .footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  .footer p { font-size: 7px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; }
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="header-title">Patient Diagnostic Report</div>
+        <div class="header-sub">HealthPro AI Clinical Systems</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="label">Generated On</div>
+      <div class="value">${date}</div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="summary">
+    <div class="label">Executive Summary</div>
+    <p>AI analysis identified a correlation with <strong>${aiResult.condition}</strong>. The protocol below outlines recommended steps based on <strong>${selectedSymptoms.length}</strong> reported symptom${selectedSymptoms.length !== 1 ? 's' : ''}. Please follow the suggestions and consult the recommended specialist promptly.</p>
+  </div>
+
+  <!-- ACTIONS + TABLE -->
+  <div class="two-col">
+    <!-- WHAT TO DO -->
+    <div class="actions-box">
+      <div class="section-title">What You Should Do</div>
+      <div class="action-item">
+        <div class="action-number">01</div>
+        <div>
+          <div class="action-label">Primary Action</div>
+          <div class="action-text">${aiResult.advice}</div>
+        </div>
+      </div>
+      <div class="action-item action-divider">
+        <div class="action-number" style="color:#f1f5f9;">02</div>
+        <div>
+          <div class="action-label">Lifestyle &amp; Recovery</div>
+          <div class="action-text recovery">${aiResult.lifestyleAdvice || 'Rest and maintain adequate fluid intake for 48 hours.'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRIC TABLE -->
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th>Clinical Parameter</th>
+            <th>Reading</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Diagnosis</td><td class="val-black">${aiResult.condition}</td></tr>
+          <tr><td>Match Confidence</td><td class="val-blue">${aiResult.certainty}</td></tr>
+          <tr><td>Urgency Level</td><td class="val-amber">MODERATE</td></tr>
+          <tr><td>Symptoms Logged</td><td class="val-black">${selectedSymptoms.length}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CHART + SPECIALIST -->
+  <div class="bottom-row">
+    <!-- CONFIDENCE RING -->
+    <div class="chart-box">
+      <div class="chart-label">AI Confidence</div>
+      <div class="chart-container">
+        <svg viewBox="0 0 36 36">
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2563eb" stroke-width="4" stroke-dasharray="${dashArray}" stroke-dashoffset="0"/>
+        </svg>
+        <div class="chart-text">${aiResult.certainty}</div>
+      </div>
+    </div>
+
+    <!-- SPECIALIST -->
+    <div class="specialist-box">
+      <div class="specialist-icon">${(aiResult.recommendedSpecialty || 'D')[0]}</div>
+      <div>
+        <div class="specialist-label">Recommended Specialist</div>
+        <div class="specialist-name">${aiResult.recommendedSpecialty}</div>
+        <div class="specialist-note">Please book an appointment at the earliest convenience.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>Disclaimer: This is an AI-generated report. Always consult a licensed physician before making medical decisions.</p>
+    <p>HealthPro AI &bull; ${new Date().getFullYear()}</p>
+  </div>
+
+</body>
+</html>`;
 
         const doc = printWindow.document;
         doc.open();
-        doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Clinical Report</title><style>' + css + '</style></head><body>' + element.innerHTML + '</body></html>');
+        doc.write(html);
         doc.close();
         printWindow.focus();
         setTimeout(() => { printWindow.print(); }, 600);
