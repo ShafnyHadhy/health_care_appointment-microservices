@@ -5,8 +5,10 @@ import {
     MdDashboard, MdPayments, MdMedication, MdVerifiedUser, 
     MdHelpOutline, MdAdd, MdSearch, MdFilterList, 
     MdDownload, MdMoreHoriz, MdTrendingUp, MdSecurity,
-    MdNotifications, MdHistory, MdMedicalServices, MdCheckCircle
+    MdNotifications, MdHistory, MdMedicalServices, MdCheckCircle, MdRotateRight
 } from 'react-icons/md';
+import { generateReceiptPDF } from '../../utils/receiptGenerator';
+import toast from 'react-hot-toast';
 
 const tealAccent = { background: 'linear-gradient(135deg, #006063 0%, #007b7f 100%)' };
 
@@ -15,11 +17,12 @@ export default function PaymentHistory() {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [downloadingId, setDownloadingId] = useState(null);
 
     useEffect(() => {
         const fetchPayments = async () => {
             try {
-                const response = await axios.get('http://localhost:3005/api/payment', {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/payment`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -33,6 +36,33 @@ export default function PaymentHistory() {
         };
         fetchPayments();
     }, []);
+
+    const handleDownloadReceipt = async (payment) => {
+        try {
+            setDownloadingId(payment._id);
+            const token = localStorage.getItem('token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            
+            // 1. Fetch full appointment details (needed for Doctor Name, Specialty, etc.)
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_URL}/api/appointments/${payment.appointmentId}/status`, 
+                config
+            );
+            
+            const appointment = response.data.data;
+            
+            // 2. Generate PDF
+            generateReceiptPDF({ payment, appointment });
+            
+            toast.success("Receipt downloaded successfully!");
+        } catch (error) {
+            console.error('Error generating receipt:', error);
+            const errorMsg = error.response?.data?.message || error.message;
+            toast.error(`Error: ${errorMsg}`);
+        } finally {
+            setDownloadingId(null);
+        }
+    };
 
     const totalSpent = payments
         .filter(p => p.status === 'completed')
@@ -143,12 +173,12 @@ export default function PaymentHistory() {
                     </div>
 
                     {/* Transactions Section */}
-                    <section className="bg-white rounded-3xl shadow-xl shadow-[#007b7f]/5 border border-[#c2c6d4]/20 overflow-hidden">
+                    <section className="bg-white rounded-3xl shadow-xl shadow-[#007b7f]/5 border border-[#c2c6d4] overflow-hidden">
                         <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#c2c6d4]/10">
                             <div className="relative flex-1 max-w-md">
                                 <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#424752]/40" size={20} />
                                 <input 
-                                    className="w-full pl-11 pr-4 py-3 bg-[#f3f4f5] border-none rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#007b7f]/20 transition-all outline-none" 
+                                    className="w-full pl-11 pr-4 py-3 bg-[#f3f4f5] border border-[#c2c6d4]/40 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#007b7f]/20 focus:border-[#007b7f] transition-all outline-none" 
                                     placeholder="Search by ID or status..." 
                                     type="text"
                                     value={searchTerm}
@@ -207,9 +237,17 @@ export default function PaymentHistory() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <button className="text-[#007b7f] hover:text-[#006063] transition-colors flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest">
-                                                    <MdDownload size={14} />
-                                                    Receipt
+                                                <button 
+                                                   onClick={() => handleDownloadReceipt(payment)}
+                                                   disabled={downloadingId === payment._id}
+                                                   className="text-[#007b7f] hover:text-[#006063] disabled:opacity-50 transition-colors flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest"
+                                                >
+                                                    {downloadingId === payment._id ? (
+                                                        <MdRotateRight className="animate-spin" size={14} />
+                                                    ) : (
+                                                        <MdDownload size={14} />
+                                                    )}
+                                                    {downloadingId === payment._id ? 'Generating...' : 'Receipt'}
                                                 </button>
                                             </td>
                                         </tr>

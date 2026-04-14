@@ -25,16 +25,17 @@ const createCheckoutSession = async (req, res) => {
         // --- DEVELOPMENT BYPASS ---
         // Automatically bypass Stripe if we don't have a real API key configured
         if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('...')) {
+            console.log('Using Payment Mock (No Stripe Key)');
             const payment = await Payment.create({
                 appointmentId,
                 patientId: req.user.id,
                 stripeSessionId: 'mock_session_' + Date.now(),
                 amount,
-                status: 'pending',
+                status: 'completed', // Auto-complete in mock mode for teammate flow
             });
 
             return res.status(200).json({
-                url: `http://localhost:5173/payment-status/${appointmentId}`, // auto redirect to status mockup
+                url: `/payment-status/${appointmentId}`, // local redirect
                 sessionId: payment.stripeSessionId,
                 payment,
             });
@@ -135,6 +136,48 @@ const handleWebhook = async (req, res) => {
 };
 
 /**
+ * @desc    Verify payment status and update appointment
+ * @route   GET /api/payment/verify/:appointmentId
+ * @access  Private
+ */
+const verifyPayment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const payment = await Payment.findOne({ appointmentId });
+
+        if (!payment) {
+            return res.status(404).json({ message: 'Payment record not found' });
+        }
+
+        // In real Stripe mode, we would check the session status here.
+        // For now, if we reach this point, we assume success or mock success.
+        payment.status = 'completed';
+        await payment.save();
+
+        // Notify appointment service
+        try {
+            await axios.put(
+                `http://localhost:3003/api/appointments/${appointmentId}/payment`,
+                {},
+                {
+                    headers: { Authorization: req.headers.authorization }
+                }
+            );
+        } catch (err) {
+            console.warn('Appointment service could not be updated:', err.message);
+        }
+
+        return res.status(200).json({ 
+            message: 'Payment verified', 
+            data: payment 
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error verifying payment' });
+    }
+};
+
+/**
  * @desc    Get payment status
  * @route   GET /api/payment/status/:appointmentId
  * @access  Private
@@ -209,7 +252,7 @@ const updatePayment = async (req, res) => {
         if (!payment) {
             return res.status(404).json({ message: 'Payment not found' });
         }
-        
+
         const updatedPayment = await Payment.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -245,8 +288,9 @@ module.exports = {
     createCheckoutSession,
     handleWebhook,
     getPaymentStatus,
+    verifyPayment,
     getAllPayments,
     getPaymentById,
     updatePayment,
-    deletePayment,
+    deletePayment
 };

@@ -4,6 +4,7 @@ const {
     createCheckoutSession,
     handleWebhook,
     getPaymentStatus,
+    verifyPayment,
     getAllPayments,
     getPaymentById,
     updatePayment,
@@ -21,6 +22,7 @@ router.post(
 
 router.post('/create-checkout-session', protect, createCheckoutSession);
 router.get('/status/:appointmentId', protect, getPaymentStatus);
+router.get('/verify/:appointmentId', protect, verifyPayment);
 router.get('/', protect, getAllPayments);
 router.get('/:id', protect, getPaymentById);
 router.put('/:id', protect, authorize('admin'), updatePayment);

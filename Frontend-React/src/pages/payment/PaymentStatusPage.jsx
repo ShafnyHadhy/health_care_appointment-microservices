@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { 
     MdVerifiedUser, MdLock, MdCheck, MdNotifications, 
     MdHistory, MdMedicalServices 
@@ -11,19 +12,47 @@ export default function PaymentStatusPage() {
     const [step, setStep] = useState(1);
 
     useEffect(() => {
-        // Step 1: Initialized (Immediate)
-        // Step 2: Verifying (after 1s)
-        const timer1 = setTimeout(() => setStep(2), 1000);
-        // Step 3: Redirect to Success (after 3.5s)
-        const timer2 = setTimeout(() => {
-            navigate('/success');
-        }, 3500);
+        const verify = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                navigate("/login");
+                return;
+            }
 
-        return () => {
-            clearTimeout(timer1);
-            clearTimeout(timer2);
+            try {
+                // Step 1: Initialized
+                setStep(1);
+                
+                // Step 2: Verifying (intentional delay for UX)
+                setTimeout(() => setStep(2), 800);
+
+                const config = {
+                    headers: { Authorization: `Bearer ${token}` }
+                };
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/api/payment/verify/${appointmentId}`,
+                    config
+                );
+
+                if (response.data) {
+                    // Step 3: Success
+                    setStep(3);
+                    setTimeout(() => {
+                        navigate('/success');
+                    }, 1500);
+                }
+            } catch (err) {
+                console.error("Verification error:", err);
+                // Even on error, we might want to retry or show failure
+                // For now, if verification fails, we can either stay here or redirect to cancel
+            }
         };
-    }, [navigate]);
+
+        if (appointmentId) {
+            verify();
+        }
+    }, [appointmentId, navigate]);
 
     return (
         <div className="bg-[#f8f9fa] text-[#191c1d] h-screen font-body antialiased selection:bg-[#007b7f]/10 overflow-hidden">
@@ -58,33 +87,33 @@ export default function PaymentStatusPage() {
 
                 <div className="relative z-10 w-full max-w-2xl">
                     {/* Processing Card */}
-                    <div className="bg-white rounded-3xl p-12 text-center shadow-xl shadow-[#007b7f]/5 border border-[#c2c6d4]/20 flex flex-col items-center">
+                    <div className="bg-white rounded-3xl p-8 text-center shadow-xl shadow-[#007b7f]/5 border border-[#c2c6d4] flex flex-col items-center">
                         {/* Status Visualizer */}
-                        <div className="relative mb-8">
+                        <div className="relative mb-6">
                             <div className="spinner-ring"></div>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <MdVerifiedUser className="text-[#007b7f] text-4xl" />
+                                <MdVerifiedUser className="text-[#007b7f] text-3xl" />
                             </div>
                         </div>
 
                         {/* Messaging Hierarchy */}
-                        <h1 className="text-3xl font-black tracking-tight text-[#191c1d] mb-4 font-headline uppercase leading-tight">Verifying your payment...</h1>
-                        <p className="text-[#424752] text-lg max-w-md mx-auto leading-relaxed mb-10 opacity-80">
-                            Please stay on this page. We are securely communicating with your financial institution to finalize your clinical appointment booking.
+                        <h1 className="text-2xl font-black tracking-tight text-[#191c1d] mb-3 font-headline uppercase leading-tight">Verifying payment...</h1>
+                        <p className="text-[#424752] text-sm max-w-md mx-auto leading-relaxed mb-6 opacity-80">
+                            Please stay on this page. We are securely communicating with your financial institution to finalize your clinical appointment.
                         </p>
 
                         {/* Secure Progress Indicator */}
-                        <div className="w-full max-w-sm space-y-6">
-                            <div className="flex items-center gap-3 justify-center mb-8">
-                                <div className="bg-[#e0f2f1] px-4 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
-                                    <MdLock className="text-[#006063] text-sm" />
-                                    <span className="text-[#006063] text-[10px] font-black tracking-[0.15em] uppercase">End-to-End Encrypted</span>
+                        <div className="w-full max-w-sm space-y-4">
+                            <div className="flex items-center gap-3 justify-center mb-4">
+                                <div className="bg-[#e0f2f1] px-4 py-1 rounded-full flex items-center gap-2 shadow-sm">
+                                    <MdLock className="text-[#006063] text-[8px]" />
+                                    <span className="text-[#006063] text-[8px] font-black tracking-[0.15em] uppercase">End-to-End Encrypted</span>
                                 </div>
                             </div>
 
                             {/* Bento-style status steps */}
                             <div className="grid grid-cols-1 gap-3 text-left">
-                                <div className={`p-5 rounded-2xl flex items-center gap-4 transition-all duration-500 ${step >= 1 ? 'bg-[#f3f4f5] border border-[#c2c6d4]/20' : 'opacity-40'}`}>
+                                <div className={`p-5 rounded-2xl flex items-center gap-4 transition-all duration-500 ${step >= 1 ? 'bg-[#f3f4f5] border border-[#c2c6d4]/30' : 'opacity-40'}`}>
                                     <div className={`w-6 h-6 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-[#007b7f] text-white' : 'bg-[#c2c6d4]'}`}>
                                         <MdCheck size={14} />
                                     </div>
@@ -115,13 +144,13 @@ export default function PaymentStatusPage() {
                         </div>
 
                         {/* Technical ID for reassurance */}
-                        <div className="mt-12 pt-8 border-t border-[#c2c6d4]/20 w-full flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="mt-8 pt-6 border-t border-[#c2c6d4]/20 w-full flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="text-left">
-                                <p className="text-[10px] uppercase tracking-[0.2em] text-[#424752] font-black opacity-50 mb-1">Transaction Identity</p>
-                                <p className="text-sm font-mono text-[#007b7f] font-bold tracking-tight">CB-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                                <p className="text-[9px] uppercase tracking-[0.2em] text-[#424752] font-black opacity-50 mb-0.5">Transaction Identity</p>
+                                <p className="text-xs font-mono text-[#007b7f] font-bold tracking-tight">CB-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
                             </div>
                             <div className="flex items-center gap-2 opacity-60">
-                                <span className="text-[9px] font-black text-[#424752] uppercase tracking-widest ">PCI-DSS Secure Gateway</span>
+                                <span className="text-[8px] font-black text-[#424752] uppercase tracking-widest ">PCI-DSS Secure</span>
                             </div>
                         </div>
                     </div>
@@ -138,11 +167,11 @@ export default function PaymentStatusPage() {
 
             <style>{`
                 .spinner-ring {
-                    border: 4px solid #f3f4f5;
+                    border: 3px solid #f3f4f5;
                     border-top-color: #007b7f;
                     border-radius: 50%;
-                    width: 90px;
-                    height: 90px;
+                    width: 70px;
+                    height: 70px;
                     animation: spin 1s linear infinite;
                 }
                 @keyframes spin {

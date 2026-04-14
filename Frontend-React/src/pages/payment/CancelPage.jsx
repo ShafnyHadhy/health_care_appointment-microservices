@@ -59,9 +59,9 @@ export default function CancelPage() {
                             </header>
 
                             {/* Status Card using Tonal Layering */}
-                            <div className="bg-[#f3f4f5] p-6 rounded-2xl space-y-4 border border-[#c2c6d4]/10">
+                            <div className="bg-[#f3f4f5] p-6 rounded-2xl space-y-4 border border-[#c2c6d4]/40">
                                 <div className="flex items-start gap-4">
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-[#c2c6d4]/20 flex items-center justify-center text-[#007b7f]">
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-[#c2c6d4] flex items-center justify-center text-[#007b7f]">
                                         <MdCancelPresentation size={32} />
                                     </div>
                                     <div className="space-y-1 pt-0.5">
