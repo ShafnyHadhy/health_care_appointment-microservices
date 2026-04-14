@@ -20,6 +20,7 @@ import {
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useState } from 'react';
+import BookingModal from './patient/bookingModel';
 
 export default function FindDoctor() {
 
@@ -27,6 +28,8 @@ export default function FindDoctor() {
   const [allDoctors, setAllDoctors] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const filteredDoctors = allDoctors.filter(doc => {
     const matchesSpecialty = selectedSpecialty === 'All' || doc.specialty?.toLowerCase() === selectedSpecialty.toLowerCase();
@@ -85,18 +88,23 @@ export default function FindDoctor() {
 
   }, []);
 
+  const handleBookClick = (doctor) => {
+    setSelectedDoctor(doctor);
+    setShowModal(true);
+  };
+
   return (
     <div className="bg-neutral font-body text-on-surface">
       <main className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen px-8 py-8 gap-8 items-start">
         
         {/* Filter Sidebar */}
         <aside className="w-full md:w-64 lg:w-72 shrink-0 sticky top-8">
-          <div className="bg-white p-5 rounded-xl space-y-6 border border-gray-200 shadow-sm max-h-[calc(100vh-4rem)] overflow-y-auto hover:scrollbar-thin">
+          <div className="bg-white p-5 rounded-xl space-y-6 border border-gray-300 shadow-sm max-h-[calc(100vh-4rem)] overflow-y-auto hover:scrollbar-thin">
             <div className="flex items-center justify-between">
               <h2 className="font-headline font-bold text-xl text-primary">Filters</h2>
               <button 
                 onClick={() => { setSelectedSpecialty('All'); setSearchQuery(''); }}
-                className="text-sm font-semibold text-primary/70 hover:text-primary"
+                className="text-xs font-semibold text-primary/70 hover:text-primary py-1 px-2 rounded-full transition-colors bg-primary/70/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40"
               >
                 Clear all
               </button>
@@ -128,7 +136,7 @@ export default function FindDoctor() {
               <div className="bg-secondary-fixed/50 p-3 rounded-lg">
                 <p className="text-xs font-medium text-on-secondary-fixed-variant leading-relaxed flex items-start gap-2">
                   <Info size={14} className="mt-0.5 shrink-0" />
-                  Showing pediatricians with 4.5+ star ratings available this week.
+                  Can't find your specialist? Try searching with different keywords or check back later as we are constantly adding more doctors to our network.
                 </p>
               </div>
             </div>
@@ -143,7 +151,7 @@ export default function FindDoctor() {
               <h1 className="font-headline text-2xl font-bold text-gray-900 tracking-tight">Find Specialists</h1>
               <p className="text-gray-500 mt-1 text-sm">{filteredDoctors.length} doctors available in your network.</p>
             </div>
-            <div className="flex-1 max-w-md relative">
+            <div className="flex-1 max-w-md relative bg-white rounded-xl border border-primary/20">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text" 
@@ -158,8 +166,8 @@ export default function FindDoctor() {
           {/* Doctor Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {filteredDoctors.map((doc, i) => (
-              <div key={i} className="bg-white p-4 rounded-xl transition-all duration-200 hover:shadow-md flex flex-row items-start gap-4 group border border-gray-100 hover:border-primary/40">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative border border-gray-200 shadow-sm mt-1">
+              <div key={i} className="bg-tertiary p-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-md flex flex-row items-start gap-4 group border border-gray-200 hover:border-primary/40">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative border border-gray-300 shadow-sm mt-1">
                   <img src="/user.jpg" alt={doc.name} className="w-full h-full object-cover" />
                 </div>
 
@@ -171,8 +179,8 @@ export default function FindDoctor() {
                         <p className="text-primary font-medium text-[13px] truncate">{doc.specialty}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Fee</p>
-                        <p className="text-sm font-bold text-gray-900">{doc.consultationFee}</p>
+                        <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Consultation Fee</p>
+                        <p className="text-sm font-bold text-gray-900">Rs.{doc.consultationFee}</p>
                       </div>
                     </div>
 
@@ -183,21 +191,22 @@ export default function FindDoctor() {
                           {doc.availability}
                         </span>
                       )}
-                      {(doc.tags || []).map((tag, idx) => (
+                      {/* {(doc.tags || []).map((tag, idx) => (
                         <span key={idx} className="bg-gray-50 px-2 py-0.5 rounded text-[10px] font-medium text-gray-600 flex items-center gap-1 border border-gray-100">
                           {tag.icon}
                           {tag.label}
                         </span>
-                      ))}
+                      ))} */}
                     </div>
                   </div>
 
                   <div className="mt-3.5 flex gap-2">
-                    <button className="flex-1 py-1.5 px-2 rounded-md font-semibold text-[11px] border border-gray-200 text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors uppercase tracking-wide">
+                    <button className="flex-1 py-1.5 px-2 rounded-md font-semibold text-[11px] border border-primary bg-white text-gray-600 hover:text-gray-800 hover:bg-gray-200 transition-colors uppercase tracking-wide">
                       Profile
                     </button>
                     <button 
-                      className="bg-primary flex-[1.5] py-1.5 px-2 rounded-md font-semibold text-[11px] text-white shadow-sm hover:opacity-90 active:scale-95 transition-all uppercase tracking-wide"
+                      onClick={() => handleBookClick(doc)}
+                      className="flex-[1.5] py-1.5 px-2 rounded-md font-semibold text-[11px] bg-primary hover:bg-primary/80 text-white active:scale-95 transition-all uppercase tracking-wide border border-primary"
                     >
                       Book Now
                     </button>
@@ -209,6 +218,13 @@ export default function FindDoctor() {
 
         </section>
       </main>
+
+      {showModal && (
+        <BookingModal
+          doctor={selectedDoctor}
+          onClose={() => setShowModal(false)}
+        />
+      )}
 
       {/* BottomNavBar (Mobile Only) */}
       <nav className="fixed bottom-0 left-0 w-full z-50 md:hidden bg-white border-t border-gray-200 flex justify-around items-center px-4 pb-safe py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
