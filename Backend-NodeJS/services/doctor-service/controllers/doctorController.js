@@ -100,7 +100,7 @@ const updateAvailability = async (req, res) => {
  * @access  Public / Admin
  */
 const getAllDoctors = async (req, res) => {
-   
+  
 };
 
 /**
