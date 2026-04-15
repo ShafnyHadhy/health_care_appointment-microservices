@@ -77,7 +77,6 @@ export default function FindDoctor() {
 
         console.log('Mapped doctors:', mappedDoctors);
         setAllDoctors(mappedDoctors);
-        toast.success('Doctors fetched successfully');
 
       } catch (error) {
         toast.error('Failed to fetch doctors', error);
@@ -166,9 +165,9 @@ export default function FindDoctor() {
           {/* Doctor Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {filteredDoctors.map((doc, i) => (
-              <div key={i} className="bg-tertiary p-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-md flex flex-row items-start gap-4 group border border-gray-200 hover:border-primary/40">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative border border-gray-300 shadow-sm mt-1">
-                  <img src="/user.jpg" alt={doc.name} className="w-full h-full object-cover" />
+              <div key={i} className="bg-white p-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-md flex flex-row items-start gap-4 group border border-gray-200 hover:border-primary/40">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative border border-gray-100 mt-1">
+                  <img src="/user.png" alt={doc.name} className="w-full h-full object-cover" />
                 </div>
 
                 <div className="grow flex flex-col justify-between min-w-0">
@@ -206,7 +205,7 @@ export default function FindDoctor() {
                     </button>
                     <button 
                       onClick={() => handleBookClick(doc)}
-                      className="flex-[1.5] py-1.5 px-2 rounded-md font-semibold text-[11px] bg-primary hover:bg-primary/80 text-white active:scale-95 transition-all uppercase tracking-wide border border-primary"
+                      className="flex-[1.5] py-1.5 px-2 rounded-md font-semibold text-[11px] bg-primary/80 hover:bg-primary text-white active:scale-95 transition-all uppercase tracking-wide border border-primary"
                     >
                       Book Now
                     </button>

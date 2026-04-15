@@ -13,6 +13,7 @@ import RoleSelection from './components/roleSelection'
 import PatientRegister from './components/patientRegister'
 import DoctorRegister from './components/doctorRegister'
 import SymptomChecker from './pages/patient/SymptomChecker'
+import DoctorAppointments from './pages/doctor/doctorAppointments'
 import ProfilePage from "./pages/ProfilePage";
 
 function App() {
@@ -38,9 +39,12 @@ function App() {
           <Route path="/payment-history" element={<PaymentHistory />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
+          <Route path="/doctor-appointments" element={<DoctorAppointments />} />
           <Route path="/profile" element={<ProfilePage />} />
+
         </Routes>
       </div>
+ 
     </BrowserRouter>
   );
 }
