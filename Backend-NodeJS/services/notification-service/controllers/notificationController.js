@@ -246,6 +246,8 @@ const notifyCompleted = async (req, res) => {
     console.error("Error sending consultation completion notification:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
+};
+
 /**
  * @desc    Send Login Notification
  * @route   POST /api/notify/login
