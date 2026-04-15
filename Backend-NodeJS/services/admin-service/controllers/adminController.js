@@ -4,7 +4,6 @@ const axios = require('axios');
 
 // Helper: Configure Axios requests with Admin JWT
 const getAxiosConfig = (req) => {
-    // Pass the admin's token along to other services if their endpoints are protected
     const token = req.headers.authorization;
     return {
         headers: {
@@ -12,6 +11,11 @@ const getAxiosConfig = (req) => {
         },
     };
 };
+
+const PATIENT_SERVICE = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
+const DOCTOR_SERVICE = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
+const APPOINTMENT_SERVICE = process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003';
+const AUTH_SERVICE = process.env.AUTH_SERVICE_URL || 'http://localhost:3008';
 
 /**
  * @desc    Register Admin
@@ -36,7 +40,7 @@ const registerAdmin = async (req, res) => {
 
         if (admin) {
             try {
-                await axios.post('http://localhost:3008/api/auth/register', {
+                await axios.post(`${AUTH_SERVICE}/api/auth/register`, {
                     email: admin.email,
                     password: req.body.password,
                     role: 'admin',
@@ -71,12 +75,9 @@ const registerAdmin = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
-        const patientUrl = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
-        const doctorUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
-
         const [patientsRes, doctorsRes] = await Promise.allSettled([
-            axios.get(`${patientUrl}/api/patients`, config),
-            axios.get(`${doctorUrl}/api/doctors`, config)
+            axios.get(`${PATIENT_SERVICE}/api/patients`, config),
+            axios.get(`${DOCTOR_SERVICE}/api/doctors`, config)
         ]);
 
         const patients = patientsRes.status === 'fulfilled' ? patientsRes.value.data.data.map(p => ({ ...p, userType: 'patient' })) : [];
@@ -100,9 +101,7 @@ const getAllUsers = async (req, res) => {
 const getAllAppointments = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
-        const apptUrl = process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003';
-        
-        const response = await axios.get(`${apptUrl}/api/appointments`, config);
+        const response = await axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config);
 
         res.status(200).json({
             message: 'Appointments fetched successfully',
@@ -151,9 +150,9 @@ const getDashboardCounts = async (req, res) => {
         // We can reuse the routes from above locally or call the other services again
         // For simplicity, we just make the parallel calls to other services again here
         const [patientsRes, doctorsRes, appointmentsRes] = await Promise.allSettled([
-            axios.get(`${process.env.PATIENT_SERVICE_URL}/api/patients`, config),
-            axios.get(`${process.env.DOCTOR_SERVICE_URL}/api/doctors`, config),
-            axios.get(`${process.env.APPOINTMENT_SERVICE_URL}/api/appointments`, config)
+            axios.get(`${PATIENT_SERVICE}/api/patients`, config),
+            axios.get(`${DOCTOR_SERVICE}/api/doctors`, config),
+            axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config)
         ]);
 
         const patients = patientsRes.status === 'fulfilled' ? patientsRes.value.data.data : [];
@@ -235,11 +234,9 @@ const deleteUser = async (req, res) => {
         const config = getAxiosConfig(req);
         
         if (type === 'patient') {
-            const patientUrl = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
-            await axios.delete(`${patientUrl}/api/patients/${id}`, config);
+            await axios.delete(`${PATIENT_SERVICE}/api/patients/${id}`, config);
         } else if (type === 'doctor') {
-            const doctorUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
-            await axios.delete(`${doctorUrl}/api/doctors/${id}`, config);
+            await axios.delete(`${DOCTOR_SERVICE}/api/doctors/${id}`, config);
         } else {
             return res.status(400).json({ message: 'Invalid user type' });
         }
@@ -263,11 +260,9 @@ const updateUser = async (req, res) => {
         const config = getAxiosConfig(req);
         
         if (type === 'patient') {
-            const patientUrl = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
-            await axios.put(`${patientUrl}/api/patients/${id}`, req.body, config);
+            await axios.put(`${PATIENT_SERVICE}/api/patients/${id}`, req.body, config);
         } else if (type === 'doctor') {
-            const doctorUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
-            await axios.put(`${doctorUrl}/api/doctors/${id}`, req.body, config);
+            await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}`, req.body, config);
         } else {
             return res.status(400).json({ message: 'Invalid user type' });
         }
@@ -290,18 +285,8 @@ const rejectDoctor = async (req, res) => {
         const { id } = req.params;
         const config = getAxiosConfig(req);
         
-        const doctorUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
-        
-        // Either the doctor service has a reject endpoint, or we can soft delete it or mark it rejected via update
-        // We'll simulate a rejection via update if there's no endpoint, or call delete.
-        // Assuming there's a reject endpoint or we delete the application
-        // We will just do a DELETE since it's rejected, or an update if we want to keep records
-        try {
-            await axios.put(`${doctorUrl}/api/doctors/${id}`, { isVerified: false, status: 'rejected' }, config);
-        } catch(updateErr) {
-            // fallback if it doesn't work, just delete them
-            await axios.delete(`${doctorUrl}/api/doctors/${id}`, config);
-        }
+        // Send rejection status to Doctor service
+        await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}`, { isVerified: false, status: 'rejected' }, config);
 
         res.status(200).json({ message: 'Doctor application rejected successfully' });
     } catch (error) {

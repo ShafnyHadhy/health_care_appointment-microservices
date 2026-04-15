@@ -20,6 +20,21 @@ const adminSchema = new mongoose.Schema(
             type: String,
             default: 'admin',
         },
+        roleRef: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Role'
+        },
+        points: {
+            type: Number,
+            default: 0
+        },
+        badges: [{
+            type: String
+        }],
+        preferredLanguage: {
+            type: String,
+            default: 'en'
+        }
     },
     {
         timestamps: true,
