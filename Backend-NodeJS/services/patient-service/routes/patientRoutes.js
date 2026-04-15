@@ -10,12 +10,16 @@ const {
     uploadReport,
     getReports,
     deleteReport,
-    getMyPrescriptions
+    getMyPrescriptions,
+    updatePatient,
+    deletePatient
 } = require('../controllers/patientController');
 
 // Public routes
 router.post('/register', registerPatient);
-router.get('/', getAllPatients); // Typically protected for admin only, public/admin here
+router.get('/', protect, authorize('admin'), getAllPatients);
+router.put('/:id', protect, authorize('admin'), updatePatient);
+router.delete('/:id', protect, authorize('admin'), deletePatient);
 
 // Protected routes (Patient Profile)
 router.get('/profile', protect, getPatientProfile);

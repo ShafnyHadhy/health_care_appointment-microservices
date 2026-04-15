@@ -16,33 +16,10 @@ app.use(express.json());
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(async () => {
+    .then(() => {
         console.log('MongoDB Connected to admindb');
-        await seedAdmin();
     })
     .catch(err => console.error('MongoDB Connection Error:', err));
-
-// Initial seed function for the first admin user
-const seedAdmin = async () => {
-    try {
-        const adminCount = await Admin.countDocuments();
-        if (adminCount === 0) {
-            console.log('No admin found. Seeding initial admin user...');
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash('admin123', salt);
-
-            await Admin.create({
-                name: 'System Admin',
-                email: 'admin@example.com',
-                password: hashedPassword,
-                role: 'admin'
-            });
-            console.log('Admin user seeded successfully. (admin@example.com / admin123)');
-        }
-    } catch (error) {
-        console.error('Error seeding admin user:', error);
-    }
-};
 
 
 // Routes
@@ -61,6 +38,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3006;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Admin Service running on port ${PORT}`);
 });
