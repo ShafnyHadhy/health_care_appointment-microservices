@@ -83,7 +83,60 @@ const updatePatientProfile = async (req, res) => {
  * @access  Private/Admin
  */
 const getAllPatients = async (req, res) => {
-    
+    try {
+        const patients = await Patient.find({}).sort({ createdAt: -1 });
+        res.status(200).json({
+            message: 'Patients fetched successfully',
+            data: patients
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+/**
+ * @desc    Update a patient (Admin)
+ * @route   PUT /api/patients/:id
+ * @access  Private/Admin
+ */
+const updatePatient = async (req, res) => {
+    try {
+        const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        if (!patient) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
+        res.status(200).json({
+            message: 'Patient updated successfully',
+            data: patient
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+/**
+ * @desc    Delete a patient (Admin)
+ * @route   DELETE /api/patients/:id
+ * @access  Private/Admin
+ */
+const deletePatient = async (req, res) => {
+    try {
+        const patient = await Patient.findByIdAndDelete(req.params.id);
+        if (!patient) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
+        
+        // Also delete from auth service
+        try {
+            await axios.delete(`http://localhost:3008/api/auth/user/${req.params.id}`);
+        } catch (authError) {
+            console.error('Failed to delete auth records:', authError.message);
+        }
+
+        res.status(200).json({ message: 'Patient deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
 };
 
 // ==========================================
@@ -170,5 +223,7 @@ module.exports = {
     uploadReport,
     getReports,
     deleteReport,
-    getMyPrescriptions
+    getMyPrescriptions,
+    updatePatient,
+    deletePatient
 };

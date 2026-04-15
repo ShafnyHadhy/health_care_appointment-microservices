@@ -31,5 +31,7 @@ router.get('/patients/:id/prescriptions', protect, getPatientPrescriptions);
 
 // Admin Routes
 router.put('/:id/verify', protect, authorize('admin'), verifyDoctor);
+router.put('/:id', protect, authorize('admin'), updateDoctor);
+router.delete('/:id', protect, authorize('admin'), deleteDoctor);
 
 module.exports = router;

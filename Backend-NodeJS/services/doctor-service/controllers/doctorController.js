@@ -100,7 +100,60 @@ const updateAvailability = async (req, res) => {
  * @access  Public / Admin
  */
 const getAllDoctors = async (req, res) => {
-  
+  try {
+    const doctors = await Doctor.find({}).sort({ createdAt: -1 });
+    res.status(200).json({
+      message: 'Doctors fetched successfully',
+      data: doctors
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+/**
+ * @desc    Update a doctor (Admin)
+ * @route   PUT /api/doctors/:id
+ * @access  Private/Admin
+ */
+const updateDoctor = async (req, res) => {
+  try {
+    const doctor = await Doctor.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+    res.status(200).json({
+      message: 'Doctor updated successfully',
+      data: doctor
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+/**
+ * @desc    Delete a doctor (Admin)
+ * @route   DELETE /api/doctors/:id
+ * @access  Private/Admin
+ */
+const deleteDoctor = async (req, res) => {
+  try {
+    const doctor = await Doctor.findByIdAndDelete(req.params.id);
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    // Also delete from auth service
+    try {
+      await axios.delete(`http://localhost:3008/api/auth/user/${req.params.id}`);
+    } catch (authError) {
+      console.error('Failed to delete auth records:', authError.message);
+    }
+
+    res.status(200).json({ message: 'Doctor deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
 };
 
 /**
@@ -176,5 +229,7 @@ module.exports = {
   acceptOrRejectAppointment,
   issuePrescription,
   viewPatientReports,
-  getPatientPrescriptions
+  getPatientPrescriptions,
+  updateDoctor,
+  deleteDoctor
 };
