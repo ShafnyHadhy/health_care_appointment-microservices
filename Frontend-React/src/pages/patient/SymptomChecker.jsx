@@ -42,6 +42,8 @@ export default function SymptomChecker() {
     const [aiResult, setAiResult] = useState(null);
     const [showReport, setShowReport] = useState(false);
     const [showEmergency, setShowEmergency] = useState(false);
+    const [showEmergencyProtocol, setShowEmergencyProtocol] = useState(false);
+    const [clickedQuestionIdx, setClickedQuestionIdx] = useState(null);
     const [doctors, setDoctors] = useState([]);
     const [selectedDoctor, setSelectedDoctor] = useState(null);
 
@@ -133,6 +135,7 @@ export default function SymptomChecker() {
             if (!isReAnalysis) setStep(1);
         } finally {
             setIsAnalyzing(false);
+            setClickedQuestionIdx(null);
         }
     };
 
@@ -413,7 +416,7 @@ export default function SymptomChecker() {
                         </div>
                     </div>
                     <div className="hidden md:flex items-center gap-6">
-                        <button className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Emergency Protocol</button>
+                        <button onClick={() => setShowEmergencyProtocol(true)} className="text-sm font-bold text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>Emergency Protocol</button>
                         <button className="text-sm font-bold text-slate-400 hover:text-white transition-colors underline decoration-blue-500 underline-offset-8">Symptom Engine</button>
                         <div className="h-4 w-px bg-white/10"></div>
                         <div className="flex items-center gap-2">
@@ -701,32 +704,52 @@ export default function SymptomChecker() {
                                     
                                     <div className="space-y-4">
                                         {aiResult.followUpQuestions.map((q, idx) => (
-                                            <div key={idx} className="bg-white/5 p-5 rounded-2xl border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-white/10 transition-all group">
-                                                <p className="text-white font-bold text-base">{q}</p>
+                                            <div key={idx} className={`bg-white/5 p-5 rounded-2xl border transition-all group ${clickedQuestionIdx === idx ? 'border-blue-500/50 bg-blue-500/5' : 'border-white/5 hover:bg-white/10'} flex flex-col sm:flex-row sm:items-center justify-between gap-6`}>
+                                                <p className={`font-bold text-base transition-colors ${clickedQuestionIdx === idx ? 'text-blue-400' : 'text-white'}`}>{q}</p>
                                                 <div className="flex gap-3">
                                                     <button 
+                                                        disabled={isAnalyzing}
                                                         onClick={() => {
+                                                            setClickedQuestionIdx(idx);
                                                             const cleanSymptom = q
-                                                                .replace(/^(Are you experiencing|Do you have|Is your|Have you felt|Any)\s+/i, '')
+                                                                .replace(/^(Are you experiencing|Do you have|Is your|Have you felt|Any|Are you also experiencing|Are you feeling|Do you notice)\s+/i, '')
                                                                 .replace(/\?$/, '')
                                                                 .trim();
-                                                            const newList = [...selectedSymptoms, cleanSymptom];
-                                                            setSelectedSymptoms(newList);
-                                                            runAnalysis(newList);
+                                                            
+                                                            setSelectedSymptoms(prev => {
+                                                                const newList = [...new Set([...prev, cleanSymptom])];
+                                                                runAnalysis(newList);
+                                                                return newList;
+                                                            });
                                                         }}
-                                                        className="px-8 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-all active:scale-95 shadow-xl shadow-blue-600/20 flex items-center gap-2"
+                                                        className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl flex items-center gap-2 ${
+                                                            isAnalyzing && clickedQuestionIdx === idx
+                                                                ? 'bg-blue-600/50 text-white/50 cursor-wait'
+                                                                : isAnalyzing
+                                                                ? 'bg-blue-600/20 text-white/30 cursor-not-allowed'
+                                                                : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
+                                                        }`}
                                                     >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                                        Yes
+                                                        {isAnalyzing && clickedQuestionIdx === idx ? (
+                                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                                        )}
+                                                        {isAnalyzing && clickedQuestionIdx === idx ? 'Analysing...' : 'Yes'}
                                                     </button>
                                                     <button 
+                                                        disabled={isAnalyzing}
                                                         onClick={() => {
                                                             setAiResult(prev => ({
                                                                 ...prev,
                                                                 followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx)
                                                             }));
                                                         }}
-                                                        className="px-8 py-3 bg-white/5 text-slate-400 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5"
+                                                        className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
+                                                            isAnalyzing 
+                                                                ? 'bg-white/5 text-slate-500 border-white/5 cursor-not-allowed'
+                                                                : 'bg-white/5 text-slate-400 hover:bg-white/10 border-white/5'
+                                                        }`}
                                                     >
                                                         No
                                                     </button>
@@ -1033,6 +1056,71 @@ export default function SymptomChecker() {
                 </div>
             </div>
             
+            {/* EMERGENCY PROTOCOL MODAL */}
+            {showEmergencyProtocol && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowEmergencyProtocol(false)}></div>
+                    <div className="relative z-10 bg-[#0d0f14] border border-red-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl shadow-red-900/30 animate-scale-in">
+                        {/* Header */}
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-red-500/20 rounded-2xl flex items-center justify-center text-2xl border border-red-500/30">🚨</div>
+                            <div>
+                                <h2 className="text-lg font-black text-red-400 uppercase tracking-tight">Emergency Protocol</h2>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">CareBridge Critical Response</p>
+                            </div>
+                            <button onClick={() => setShowEmergencyProtocol(false)} className="ml-auto w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+
+                        {/* Medical Emergency Panel */}
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5 mb-6">
+                            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Medical Emergency — Action Required</p>
+                            <p className="text-sm text-red-200 font-bold leading-relaxed">
+                                If you are experiencing a medical emergency, such as severe bleeding, a heart attack, or any life-threatening condition, immediately <span className="underline decoration-red-500">call emergency services</span>. Prompt action is crucial—do not wait for help to arrive.
+                            </p>
+                        </div>
+
+                        {/* Emergency Contacts */}
+                        <div className="space-y-3 mb-6">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Emergency Contacts</p>
+                            <a href="tel:999" className="flex items-center justify-between p-4 bg-red-600 hover:bg-red-500 rounded-2xl transition-all group">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xl">📞</span>
+                                    <div>
+                                        <p className="font-black text-white text-sm">Call 999</p>
+                                        <p className="text-[10px] text-red-200">Ambulance / Police / Fire</p>
+                                    </div>
+                                </div>
+                                <svg className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                            </a>
+                            <a href="tel:911" className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xl">📞</span>
+                                    <div>
+                                        <p className="font-black text-white text-sm">Call 911</p>
+                                        <p className="text-[10px] text-slate-400">International Emergency</p>
+                                    </div>
+                                </div>
+                                <svg className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                            </a>
+                        </div>
+
+                        {/* Quick Signs */}
+                        <div className="bg-white/3 border border-white/5 rounded-2xl p-4">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Signs That Need Immediate Help</p>
+                            <ul className="space-y-1.5">
+                                {['Chest pain or pressure','Difficulty breathing','Face drooping or arm weakness','Severe bleeding or head injury','Loss of consciousness'].map((s, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+                                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0"></span>{s}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* FOOTER */}
             <footer className="relative z-10 py-10 text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest bg-black/50">
                 <p>&copy; 2026 CareBridge AI &bull; Clinical Suite 3.4 &bull; All Protocols Secure</p>
