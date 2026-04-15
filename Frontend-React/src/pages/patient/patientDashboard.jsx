@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -27,8 +28,6 @@ import {
   Activity, 
   Footprints 
 } from 'lucide-react';
-
-import { useNavigate } from 'react-router-dom';
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
