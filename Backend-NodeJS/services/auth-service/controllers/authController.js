@@ -43,6 +43,15 @@ const login = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.password))) {
+            // Send login notification asynchronously
+            if (process.env.NOTIFICATION_SERVICE_URL) {
+                global.fetch(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email })
+                }).catch(err => console.warn('Failed to send login notification:', err.message));
+            }
+
             res.json({
                 message: 'Logged in successfully',
                 data: {

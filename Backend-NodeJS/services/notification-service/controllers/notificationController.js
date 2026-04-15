@@ -246,9 +246,46 @@ const notifyCompleted = async (req, res) => {
     console.error("Error sending consultation completion notification:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
+/**
+ * @desc    Send Login Notification
+ * @route   POST /api/notify/login
+ * @access  Internal
+ */
+const notifyLogin = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required for login notification" });
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Security Alert: Successful Login",
+      html: `
+        <h3>Responsive Alert: Login Successful</h3>
+        <p>Hello,</p>
+        <p>We noticed a successful login to your account recently.</p>
+        <p>Date & Time: ${new Date().toLocaleString()}</p>
+        <p>If this was you, you can ignore this email. If this wasn't you, please secure your account immediately.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    
+    // Optional: send SMS if they eventually pass the phone number here
+    // For now we just send the email
+
+    res.status(200).json({ message: "Login notification sent successfully" });
+  } catch (error) {
+    console.error("Error sending login notification:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
 
 module.exports = {
   notifyBooking,
   notifyCompleted,
+  notifyLogin,
 };
