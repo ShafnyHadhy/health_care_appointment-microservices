@@ -10,6 +10,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const twilio = require('twilio');
+
+// Configure Twilio client
+let twilioClient;
+if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+}
+
+// Helper to send SMS
+const sendSMS = async (to, message) => {
+  if (!twilioClient || !process.env.TWILIO_PHONE || !to) return;
+  try {
+    await twilioClient.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE,
+      to,
+    });
+  } catch (err) {
+    console.warn(`Failed to send SMS to ${to}:`, err.message);
+  }
+};
+
 // Helper to fetch details
 const getDetails = async (patientId, doctorId) => {
   try {
@@ -101,6 +123,22 @@ const notifyBooking = async (req, res) => {
       await transporter.sendMail(doctorMailOptions);
     }
 
+    // Send SMS to Patient
+    if (patient.phone) {
+      await sendSMS(
+        patient.phone,
+        `Your appointment with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} is confirmed. Fee: LKR ${consultationFee}.`
+      );
+    }
+
+    // Send SMS to Doctor
+    if (doctor.phone) {
+      await sendSMS(
+        doctor.phone,
+        `New appointment booked with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot}.`
+      );
+    }
+
     res.status(200).json({ message: "Booking notification sent successfully" });
   } catch (error) {
     console.error("Error sending booking notification:", error);
@@ -181,6 +219,22 @@ const notifyCompleted = async (req, res) => {
         `,
       };
       await transporter.sendMail(doctorMailOptions);
+    }
+
+    // Send SMS to Patient
+    if (patient.phone) {
+      await sendSMS(
+        patient.phone,
+        `Your consultation with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
+      );
+    }
+
+    // Send SMS to Doctor
+    if (doctor.phone) {
+      await sendSMS(
+        doctor.phone,
+        `Your consultation with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
+      );
     }
 
     res
