@@ -10,7 +10,9 @@ const {
     uploadReport,
     getReports,
     deleteReport,
-    getMyPrescriptions
+    getMyPrescriptions,
+    updatePatient,
+    deletePatient
 } = require('../controllers/patientController');
 
 // Public routes

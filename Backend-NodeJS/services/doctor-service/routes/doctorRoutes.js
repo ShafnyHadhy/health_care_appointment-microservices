@@ -10,7 +10,9 @@ const {
   acceptOrRejectAppointment,
   issuePrescription,
   viewPatientReports,
-  getPatientPrescriptions
+  getPatientPrescriptions,
+  updateDoctor,
+  deleteDoctor
 } = require('../controllers/doctorController');
 const { protect, authorize } = require('../middleware/auth');
 

@@ -127,7 +127,7 @@ const getUserAppointments = async (req, res) => {
     const userId = req.user.id;
 
     console.log(`Fetching appointments for user ${userId} with role ${role}`);
-
+    
     let query = {};
     if (role === 'patient') {
       query.patientId = userId;
