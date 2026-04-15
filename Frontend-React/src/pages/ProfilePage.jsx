@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import Header from "../components/Header";
+import Header from "../components/header";
 import Footer from "../components/footer";
 import {
   User,
@@ -44,6 +44,13 @@ export default function ProfilePage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [prescriptions, setPrescriptions] = useState([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -72,6 +79,9 @@ export default function ProfilePage() {
           "http://localhost:3002/api/doctors/profile",
           { headers: { Authorization: `Bearer ${token}` } },
         );
+      } else {
+        setLoading(false);
+        return;
       }
       setProfile(response.data);
       setEditForm(response.data);
@@ -87,21 +97,17 @@ export default function ProfilePage() {
     }
   };
 
-  // Fetch real stats data
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
       if (userRole === "patient") {
-        // Fetch patient appointments count
         const appointmentsRes = await axios
           .get(
-            "http://localhost:3003/api/appointments/patient/" +
-              (profile?._id || user?.id),
+            `http://localhost:3003/api/appointments/patient/${profile?._id || user?.id}`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           .catch(() => ({ data: [] }));
 
-        // Fetch patient reports count
         const reportsRes = await axios
           .get("http://localhost:3001/api/patients/reports", {
             headers: { Authorization: `Bearer ${token}` },
@@ -138,35 +144,29 @@ export default function ProfilePage() {
           },
         ]);
       } else if (userRole === "doctor") {
-        // Fetch doctor appointments count
         const appointmentsRes = await axios
           .get(
-            "http://localhost:3003/api/appointments/doctor/" +
-              (profile?._id || user?.id),
+            `http://localhost:3003/api/appointments/doctor/${profile?._id || user?.id}`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           .catch(() => ({ data: [] }));
 
-        // Fetch doctor's patients count (unique patients from appointments)
         const appointments = appointmentsRes.data || [];
         const uniquePatients = [
           ...new Set(appointments.map((apt) => apt.patientId)),
         ];
 
-        const appointmentsCount = appointments.length;
-        const patientsCount = uniquePatients.length;
-
         setStats([
           {
             icon: <Calendar size={18} />,
             label: "Appointments",
-            value: appointmentsCount.toString(),
+            value: appointments.length.toString(),
             change: "+0",
           },
           {
             icon: <Users size={18} />,
             label: "Total Patients",
-            value: patientsCount.toString(),
+            value: uniquePatients.length.toString(),
             change: "+0",
           },
           {
@@ -185,7 +185,6 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
-      // Set default stats if fetch fails
       if (userRole === "patient") {
         setStats([
           {
@@ -246,7 +245,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Fetch prescriptions
   const fetchPrescriptions = async () => {
     if (userRole !== "patient") return;
 
@@ -264,7 +262,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Refresh stats when profile updates
   useEffect(() => {
     if (profile) {
       fetchStats();
@@ -274,6 +271,55 @@ export default function ProfilePage() {
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordChange = async () => {
+    if (
+      !passwordData.currentPassword ||
+      !passwordData.newPassword ||
+      !passwordData.confirmPassword
+    ) {
+      toast.error("Please fill all password fields");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const response = await axios.post(
+        "http://localhost:3008/api/auth/change-password",
+        {
+          email: profile?.email,
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (response.status === 200) {
+        toast.success("Password changed successfully!");
+        setShowPasswordModal(false);
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      }
+    } catch (error) {
+      console.error("Password change error:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -321,9 +367,8 @@ export default function ProfilePage() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Header with Cover Image */}
+        {/* Profile Header */}
         <div className="relative mb-8">
-          {/* Profile Avatar */}
           <div className="absolute -bottom-12 left-6 md:left-8">
             <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-white shadow-lg flex items-center justify-center border-4 border-white">
               <div className="w-full h-full rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
@@ -334,7 +379,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Profile Info */}
           <div className="ml-32 md:ml-40 pt-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
@@ -390,7 +434,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats Cards - Real Data */}
+        {/* Stats Cards */}
         {!statsLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {stats.map((stat, idx) => (
@@ -426,10 +470,11 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Tabs */}
+        {/* Tabs - Role Based */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="border-b border-gray-200 overflow-x-auto">
             <div className="flex">
+              {/* Profile Tab - Everyone */}
               <button
                 onClick={() => setActiveTab("profile")}
                 className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
@@ -441,27 +486,37 @@ export default function ProfilePage() {
                 <User size={16} className="inline mr-2" />
                 Profile Information
               </button>
-              <button
-                onClick={() => setActiveTab("medical")}
-                className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === "medical"
-                    ? "text-teal-600 border-b-2 border-teal-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <HeartPulse size={16} className="inline mr-2" />
-                Medical Info
-              </button>
-              <button
-                onClick={() => setActiveTab("prescriptions")}
-                className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === "prescriptions"
-                    ? "text-teal-600 border-b-2 border-teal-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <Pill size={16} className="inline mr-2" /> Prescriptions
-              </button>
+
+              {/* Medical Info Tab - Patient Only */}
+              {userRole === "patient" && (
+                <button
+                  onClick={() => setActiveTab("medical")}
+                  className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === "medical"
+                      ? "text-teal-600 border-b-2 border-teal-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <HeartPulse size={16} className="inline mr-2" />
+                  Medical Info
+                </button>
+              )}
+
+              {/* Prescriptions Tab - Patient Only */}
+              {userRole === "patient" && (
+                <button
+                  onClick={() => setActiveTab("prescriptions")}
+                  className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === "prescriptions"
+                      ? "text-teal-600 border-b-2 border-teal-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Pill size={16} className="inline mr-2" /> Prescriptions
+                </button>
+              )}
+
+              {/* Security Tab - Everyone */}
               <button
                 onClick={() => setActiveTab("security")}
                 className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
@@ -473,6 +528,8 @@ export default function ProfilePage() {
                 <Lock size={16} className="inline mr-2" />
                 Security
               </button>
+
+              {/* Activity Tab - Everyone */}
               <button
                 onClick={() => setActiveTab("activity")}
                 className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
@@ -488,7 +545,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="p-6">
-            {/* Profile Information Tab - Same as before */}
+            {/* Profile Information Tab */}
             {activeTab === "profile" && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -562,6 +619,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* Doctor Specific Fields */}
                 {userRole === "doctor" && (
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -639,6 +697,7 @@ export default function ProfilePage() {
                   </div>
                 )}
 
+                {/* Patient Specific Fields */}
                 {userRole === "patient" && (
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -714,7 +773,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Medical Information Tab */}
+            {/* Medical Information Tab - Patient Only */}
             {activeTab === "medical" && userRole === "patient" && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -771,7 +830,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Prescriptions Tab */}
+            {/* Prescriptions Tab - Patient Only */}
             {activeTab === "prescriptions" && userRole === "patient" && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -888,7 +947,10 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <Lock size={20} className="text-teal-600" />
                       <div className="text-left">
@@ -970,6 +1032,107 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        {/* Password Change Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock size={32} className="text-teal-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Change Password
+                </h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  Enter your current password and new password
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        currentPassword: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter current password"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        newPassword: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter new password (min 6 characters)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowPasswordModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handlePasswordChange}
+                    disabled={passwordLoading}
+                    className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {passwordLoading ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : null}
+                    {passwordLoading ? "Changing..." : "Change Password"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

@@ -78,7 +78,6 @@ const getPatientProfile = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-
 /**
  * @desc    Update patient profile
  * @route   PUT /api/patients/profile
@@ -94,7 +93,6 @@ const updatePatientProfile = async (req, res) => {
       return res.status(404).json({ message: "Patient not found" });
     }
 
-    // Update fields
     patient.name = name || patient.name;
     patient.phone = phone || patient.phone;
     patient.dateOfBirth = dateOfBirth || patient.dateOfBirth;
@@ -126,15 +124,36 @@ const updatePatientProfile = async (req, res) => {
  * @access  Private/Admin
  */
 const getAllPatients = async (req, res) => {
-    try {
-        const patients = await Patient.find({}).sort({ createdAt: -1 });
-        res.status(200).json({
-            message: 'Patients fetched successfully',
-            data: patients
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+  try {
+    const patients = await Patient.find({})
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    // ✅ Return array directly (simpler for frontend)
+    res.status(200).json(patients);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+/**
+ * @desc    Get patient by ID
+ * @route   GET /api/patients/:id
+ * @access  Private/Admin
+ */
+const getPatientById = async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.params.id).select("-password");
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
     }
+    res.status(200).json({
+      message: "Patient fetched successfully",
+      data: patient,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
 
 /**
@@ -143,18 +162,57 @@ const getAllPatients = async (req, res) => {
  * @access  Private/Admin
  */
 const updatePatient = async (req, res) => {
-    try {
-        const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        if (!patient) {
-            return res.status(404).json({ message: 'Patient not found' });
-        }
-        res.status(200).json({
-            message: 'Patient updated successfully',
-            data: patient
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+  try {
+    const patient = await Patient.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
     }
+    res.status(200).json({
+      message: "Patient updated successfully",
+      data: patient,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// Make sure this returns correct format
+const getReports = async (req, res) => {
+  try {
+    console.log("=== getReports DEBUG START ===");
+    console.log("1. req.user:", req.user);
+    console.log("2. req.user.id:", req.user?.id);
+
+    const patient = await Patient.findById(req.user.id);
+
+    console.log("3. Patient found:", patient ? "YES" : "NO");
+    console.log("4. Patient ID:", patient?._id);
+    console.log(
+      "5. Medical reports count:",
+      patient?.medicalReports?.length || 0,
+    );
+    console.log(
+      "6. Medical reports:",
+      JSON.stringify(patient?.medicalReports, null, 2),
+    );
+
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: patient.medicalReports.length,
+      reports: patient.medicalReports,
+    });
+    console.log("=== getReports DEBUG END ===");
+  } catch (error) {
+    console.error("Error fetching reports:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
 
 /**
@@ -163,24 +221,51 @@ const updatePatient = async (req, res) => {
  * @access  Private/Admin
  */
 const deletePatient = async (req, res) => {
-    try {
-        const patient = await Patient.findByIdAndDelete(req.params.id);
-        if (!patient) {
-            return res.status(404).json({ message: 'Patient not found' });
-        }
-        
-        // Also delete from auth service
-        try {
-            await axios.delete(`http://localhost:3008/api/auth/user/${req.params.id}`);
-        } catch (authError) {
-            console.error('Failed to delete auth records:', authError.message);
-        }
-
-        res.status(200).json({ message: 'Patient deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+  try {
+    const patient = await Patient.findByIdAndDelete(req.params.id);
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
     }
+
+    // Also delete from auth service
+    try {
+      await axios.delete(
+        `http://localhost:3008/api/auth/user/${req.params.id}`,
+      );
+    } catch (authError) {
+      console.error("Failed to delete auth records:", authError.message);
+    }
+
+    res.status(200).json({ message: "Patient deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
+
+/**
+ * @desc    Get patient medical reports by ID (for doctors)
+ * @route   GET /api/patients/:patientId/medical-reports
+ * @access  Private/Doctor
+ */
+const getPatientMedicalReportsByDoctor = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    res.json({
+      count: patient.medicalReports.length,
+      reports: patient.medicalReports,
+    });
+  } catch (error) {
+    console.error("Error fetching patient reports:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
 // ==========================================
 // MEDICAL REPORTS FEATURES
 // ==========================================
@@ -221,7 +306,7 @@ const uploadReport = async (req, res) => {
     const newReport = {
       fileName: req.file.filename,
       originalName: req.file.originalname,
-      fileUrl: fileUrl,
+      fileUrl,
       uploadDate: Date.now(),
     };
 
@@ -256,22 +341,7 @@ const uploadReport = async (req, res) => {
  * @route   GET /api/patients/reports
  * @access  Private (Patient only)
  */
-const getReports = async (req, res) => {
-  try {
-    const patient = await Patient.findById(req.user.id);
 
-    if (!patient) {
-      return res.status(404).json({ message: "Patient not found" });
-    }
-
-    res.json({
-      count: patient.medicalReports.length,
-      reports: patient.medicalReports,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
-  }
-};
 /**
  * @desc    Delete a medical report
  * @route   DELETE /api/patients/reports/:filename
@@ -286,7 +356,6 @@ const deleteReport = async (req, res) => {
       return res.status(404).json({ message: "Patient not found" });
     }
 
-    // Find the report
     const reportIndex = patient.medicalReports.findIndex(
       (report) => report.fileName === filename,
     );
@@ -295,12 +364,10 @@ const deleteReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // Remove from database
     const deletedReport = patient.medicalReports[reportIndex];
     patient.medicalReports.splice(reportIndex, 1);
     await patient.save();
 
-    // Delete file from filesystem
     const filePath = path.join(__dirname, "..", "uploads", "reports", filename);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -315,52 +382,53 @@ const deleteReport = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get prescriptions for the logged-in patient
- * @route   GET /api/patients/prescriptions
- * @access  Private (Patient only)
- */
 const getMyPrescriptions = async (req, res) => {
   try {
     const patient = await Patient.findById(req.user.id);
-
     if (!patient) {
       return res.status(404).json({ message: "Patient not found" });
     }
 
-    // Call doctor service to get prescriptions for this patient
+    // Call doctor service to get prescriptions
     const response = await axios.get(
       `http://localhost:3002/api/doctors/patients/${patient._id}/prescriptions`,
       { headers: { Authorization: req.headers.authorization } },
     );
 
+    // ✅ Return prescriptions array
     res.json({
+      success: true,
       count: response.data.length,
       prescriptions: response.data,
     });
   } catch (error) {
-    // If doctor service is not available, return empty array
-    if (error.code === "ECONNREFUSED") {
-      res.json({
-        count: 0,
-        prescriptions: [],
-        message: "Doctor service not available",
-      });
-    } else {
-      res.status(500).json({ message: "Server Error", error: error.message });
-    }
+    console.error("Error fetching prescriptions:", error);
+    // Return empty array if doctor service is down
+    res.json({
+      success: true,
+      count: 0,
+      prescriptions: [],
+    });
   }
 };
 
+/**
+ * @desc    Get prescriptions for the logged-in patient
+ * @route   GET /api/patients/prescriptions
+ * @access  Private (Patient only)
+ */
+
 module.exports = {
-    registerPatient,
-    getPatientProfile,
-    updatePatientProfile,
-    getAllPatients,
-    uploadReport,
-    getReports,
-    deleteReport,
-    getMyPrescriptions,
-    updatePatient,
-    deletePatient
+  registerPatient,
+  getPatientProfile,
+  updatePatientProfile,
+  getAllPatients,
+  getPatientById,
+  uploadReport,
+  getReports,
+  deleteReport,
+  getMyPrescriptions,
+  updatePatient,
+  deletePatient,
+  getPatientMedicalReportsByDoctor,
 };
