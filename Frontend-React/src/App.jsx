@@ -14,18 +14,15 @@ import PatientRegister from './components/patientRegister'
 import DoctorRegister from './components/doctorRegister'
 import SymptomChecker from './pages/patient/SymptomChecker'
 import DoctorAppointments from './pages/doctor/doctorAppointments'
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
-
   return (
     <BrowserRouter>
-
       <div className="w-full ">
-
         <Toaster position="top-right" />
 
         <Routes path="/">
-
           <Route path="/*" element={<HomePage />} />
           <Route path="/patient-register" element={<PatientRegister />} />
           <Route path="/doctor-register" element={<DoctorRegister />} />
@@ -35,17 +32,21 @@ function App() {
           <Route path="/admin/*" element={<AdminPage />} />
           <Route path="/doctor/*" element={<DoctorPage />} />
           <Route path="/payment/:appointmentId" element={<PaymentPage />} />
-          <Route path="/payment-status/:appointmentId" element={<PaymentStatusPage />} />
+          <Route
+            path="/payment-status/:appointmentId"
+            element={<PaymentStatusPage />}
+          />
           <Route path="/payment-history" element={<PaymentHistory />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
           <Route path="/doctor-appointments" element={<DoctorAppointments />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
         </Routes>
       </div>
  
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
