@@ -320,7 +320,7 @@ export default function PatientDashboard() {
 
               <div
                 className="bg-white border border-gray-200 hover:border-primary/40 transition-colors p-5 rounded-lg group cursor-pointer shadow-sm"
-                onClick={() => navigate("/ai-symptom-checker")}
+                onClick={() => navigate("/symptom-checker")}
               >
                 <div className="w-10 h-10 bg-primary/5 rounded-md flex items-center justify-center text-primary mb-3">
                   <Bot size={20} />
