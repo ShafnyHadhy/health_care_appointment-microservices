@@ -350,6 +350,24 @@ const markPaid = async (req, res) => {
     appointment.status = 'confirmed'; // automatically confirm when paid?
     await appointment.save();
 
+    // Trigger Booking Notification via Notification Service
+    try {
+      if (process.env.NOTIFICATION_SERVICE_URL) {
+         await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
+           appointmentId: appointment._id,
+           patientId: appointment.patientId,
+           doctorId: appointment.doctorId,
+           date: appointment.date,
+           timeSlot: appointment.timeSlot,
+           doctorName: appointment.doctorName,
+           patientName: appointment.patientName,
+           consultationFee: appointment.consultationFee
+         });
+      }
+    } catch (notifyErr) {
+       console.warn('Booking Notification failed:', notifyErr.message);
+    }
+
     res.status(200).json({ message: 'Appointment marked as paid', data: appointment });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
