@@ -2,35 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import Header from '../../components/header';
+import Footer from '../../components/footer';
 
 const COMMON_SYMPTOMS = [
-    'Headache', 'Fever', 'Cough', 'Nausea', 'Dizziness', 'Fatigue', 
+    'Headache', 'Fever', 'Cough', 'Nausea', 'Dizziness', 'Fatigue',
     'Chest Pain', 'Shortness of Breath', 'Stomach Ache', 'Gastric',
     'Joint Pain', 'Anxiety', 'Rash', 'Wheezing', 'Thirst', 'Urination',
     'Weight Gain', 'Heartburn', 'Acid Reflux', 'Blurry Vision'
 ];
+
+const tealGradient = { background: 'linear-gradient(135deg, #006063 0%, #007b7f 100%)' };
 
 export default function SymptomChecker() {
     const navigate = useNavigate();
 
     // Step Tracking
     const [step, setStep] = useState(1);
-    
-    // PRINT STYLES INJECTION
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @media print {
-                @page { margin: 0; size: auto; }
-                body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                .no-print { display: none !important; }
-                .print-full { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: visible !important; }
-                .print-bg { background-color: white !important; }
-            }
-        `;
-        document.head.appendChild(style);
-        return () => document.head.removeChild(style);
-    }, []);
 
     // Step 1: Input State
     const [selectedSymptoms, setSelectedSymptoms] = useState([]);
@@ -59,30 +47,39 @@ export default function SymptomChecker() {
 
     // Risk Level config
     const riskConfig = {
-        Critical: { color: 'text-red-400',    bg: 'bg-red-500/15',    border: 'border-red-500/30',    icon: '🚨', label: 'Critical Risk' },
-        Urgent:   { color: 'text-orange-400', bg: 'bg-orange-500/15', border: 'border-orange-500/30', icon: '⚠️', label: 'Urgent' },
-        Moderate: { color: 'text-amber-400',  bg: 'bg-amber-500/15',  border: 'border-amber-500/30',  icon: '🔶', label: 'Moderate' },
-        Low:      { color: 'text-emerald-400',bg: 'bg-emerald-500/15',border: 'border-emerald-500/30',icon: '✅', label: 'Low Risk' },
+        Critical: { color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', icon: '🚨', label: 'Critical Risk' },
+        Urgent:   { color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200', icon: '⚠️', label: 'Urgent' },
+        Moderate: { color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', icon: '🔶', label: 'Moderate' },
+        Low:      { color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: '✅', label: 'Low Risk' },
     };
+
+    // PRINT STYLES INJECTION
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @media print {
+                @page { margin: 0; size: auto; }
+                body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                .no-print { display: none !important; }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => document.head.removeChild(style);
+    }, []);
 
     // Filter suggestions locally
     useEffect(() => {
-        if (!searchTerm) {
-            setSuggestions([]);
-            return;
-        }
-        const filtered = COMMON_SYMPTOMS.filter(s => 
-            s.toLowerCase().includes(searchTerm.toLowerCase()) && 
-            !selectedSymptoms.includes(s)
+        if (!searchTerm) { setSuggestions([]); return; }
+        const filtered = COMMON_SYMPTOMS.filter(s =>
+            s.toLowerCase().includes(searchTerm.toLowerCase()) && !selectedSymptoms.includes(s)
         );
         setSuggestions(filtered);
     }, [searchTerm, selectedSymptoms]);
 
     const handleAddSymptom = (smp) => {
-        if (!selectedSymptoms.includes(smp)) {
-            setSelectedSymptoms([...selectedSymptoms, smp]);
-        }
+        if (!selectedSymptoms.includes(smp)) setSelectedSymptoms([...selectedSymptoms, smp]);
         setSearchTerm('');
+        setSuggestions([]);
     };
 
     const handleRemoveSymptom = (smp) => {
@@ -92,38 +89,27 @@ export default function SymptomChecker() {
     const runAnalysis = async (specificSymptoms = null) => {
         let finalSymptoms = specificSymptoms || [...selectedSymptoms];
         const isReAnalysis = !!specificSymptoms;
-        
-        // Auto-add the current search term if something is typed but not 'added'
+
         if (!specificSymptoms && searchTerm.trim()) {
             const splitSymptoms = searchTerm.split(',').map(s => s.trim()).filter(s => s);
             finalSymptoms = [...new Set([...finalSymptoms, ...splitSymptoms])];
         }
 
-        if (finalSymptoms.length === 0) {
-            toast.error('Please enter at least one symptom.');
-            return;
-        }
+        if (finalSymptoms.length === 0) { toast.error('Please enter at least one symptom.'); return; }
 
-        // Only show full-screen analyzer for the first run; re-analysis is 'silent'
-        if (!isReAnalysis) setStep(2); 
+        if (!isReAnalysis) setStep(2);
         setIsAnalyzing(true);
-        
+
         try {
-            // Using 127.0.0.1 instead of localhost for faster resolution on Mac
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const response = await axios.post(`${apiUrl}/api/symptoms/analyze`, {
-                symptoms: finalSymptoms
-            }, { timeout: 15000 }); 
-            
+            const response = await axios.post(`${apiUrl}/api/symptoms/analyze`, { symptoms: finalSymptoms }, { timeout: 15000 });
+
             if (response.data.success) {
                 const result = response.data.data;
                 setAiResult(result);
                 if (!isReAnalysis) {
                     setStep(3);
-                    // Trigger emergency modal after a short delay so UI settles
-                    if (result.isEmergency) {
-                        setTimeout(() => setShowEmergency(true), 400);
-                    }
+                    if (result.isEmergency) setTimeout(() => setShowEmergency(true), 400);
                 }
                 fetchDoctors(result.recommendedSpecialty);
             } else {
@@ -149,16 +135,13 @@ export default function SymptomChecker() {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const { data } = await axios.get(`${apiUrl}/api/doctors`);
             if (data?.data) {
-                // simple frontend filtering based on AI's recommended specialty
-                const filtered = data.data.filter(d => 
+                const filtered = data.data.filter(d =>
                     d.specialization && d.specialization.toLowerCase().includes(targetSpecialty.toLowerCase())
                 );
-                // Fallback to all if none matching
                 setDoctors(filtered.length > 0 ? filtered : data.data);
             }
         } catch (err) {
-            console.error("Failed to fetch doctors:", err);
-            // Ignore error gracefully so user can still see AI results
+            console.error('Failed to fetch doctors:', err);
         }
     };
 
@@ -168,30 +151,13 @@ export default function SymptomChecker() {
     };
 
     const confirmBooking = async () => {
-        if (!selectedDate || !selectedTime) {
-            toast.error('Please select both date and time.');
-            return;
-        }
-        
+        if (!selectedDate || !selectedTime) { toast.error('Please select both date and time.'); return; }
         setIsBooking(true);
-        // Simulate booking network call
         setTimeout(() => {
             setIsBooking(false);
             toast.success('Appointment Booked Successfully!');
             navigate('/patient-dashboard');
         }, 1500);
-    };
-
-    // UI RENDERERS
-    const renderProgressBar = (current) => {
-        return (
-            <div className="w-full bg-white/5 h-1.5 mb-10 overflow-hidden rounded-full border border-white/5">
-                <div 
-                    className="bg-gradient-to-r from-blue-600 to-emerald-500 h-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                    style={{ width: `${(current / 4) * 100}%` }}
-                ></div>
-            </div>
-        );
     };
 
     const downloadDossier = () => {
@@ -213,39 +179,27 @@ export default function SymptomChecker() {
   @page { margin: 0.6in; size: A4 portrait; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 12px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-  /* HEADER */
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #007B7F; padding-bottom: 14px; margin-bottom: 20px; }
   .header-left { display: flex; align-items: center; gap: 12px; }
-  .header-icon { width: 40px; height: 40px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .header-icon { width: 40px; height: 40px; background: #007B7F; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .header-icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; }
   .header-title { font-size: 20px; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: -0.5px; }
   .header-sub { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
   .header-right { text-align: right; }
   .header-right .label { font-size: 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
   .header-right .value { font-size: 12px; font-weight: 700; color: #000; }
-
-  /* SUMMARY */
-  .summary { background: #eff6ff; border-left: 4px solid #2563eb; padding: 14px 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0; }
-  .summary .label { font-size: 8px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .summary { background: #f0fdfa; border-left: 4px solid #007B7F; padding: 14px 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0; }
+  .summary .label { font-size: 8px; font-weight: 700; color: #007B7F; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
   .summary p { font-size: 12px; color: #1e293b; line-height: 1.7; }
   .summary strong { color: #000; font-weight: 700; }
-
-  /* TWO COL GRID */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-
-  /* ACTIONS BOX */
-  .actions-box { border: 1px solid #e2e8f0; padding: 18px; border-radius: 6px; }
+  .actions-box { border: 1px solid #e2e8f0; padding: 18px; border-radius: 6px; margin-bottom: 16px; }
   .section-title { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 14px; }
   .action-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
   .action-number { font-size: 22px; font-weight: 800; color: #dbeafe; line-height: 1; flex-shrink: 0; }
   .action-label { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
   .action-text { font-size: 12px; font-weight: 600; color: #1e293b; line-height: 1.5; }
   .action-divider { border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 2px; }
-  .action-text.recovery { font-weight: 400; color: #475569; }
-
-  /* TABLE */
-  .table-box { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+  .table-box { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 16px; }
   table { width: 100%; border-collapse: collapse; }
   thead tr { background: #1e293b; }
   thead th { padding: 10px 14px; font-size: 9px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1px; text-align: left; }
@@ -254,35 +208,18 @@ export default function SymptomChecker() {
   tbody tr:last-child { border-bottom: none; }
   tbody td { padding: 10px 14px; font-size: 11px; color: #64748b; }
   tbody td:last-child { text-align: right; font-weight: 700; }
-  .val-blue { color: #2563eb; }
-  .val-amber { color: #d97706; }
-  .val-black { color: #000; }
-
-  /* BOTTOM ROW */
   .bottom-row { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 20px; }
-
-  /* CHART */
   .chart-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; }
   .chart-label { font-size: 7px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center; }
-  .chart-container { position: relative; width: 70px; height: 70px; }
-  .chart-container svg { width: 70px; height: 70px; transform: rotate(-90deg); }
-  .chart-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #000; }
-
-  /* SPECIALIST */
   .specialist-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; display: flex; align-items: center; gap: 16px; }
-  .specialist-icon { width: 48px; height: 48px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+  .specialist-icon { width: 48px; height: 48px; background: #007B7F; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: 800; flex-shrink: 0; }
   .specialist-label { font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
   .specialist-name { font-size: 15px; font-weight: 800; color: #000; }
-  .specialist-note { font-size: 9px; color: #94a3b8; margin-top: 3px; }
-
-  /* FOOTER */
   .footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
   .footer p { font-size: 7px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
-
-  <!-- HEADER -->
   <div class="header">
     <div class="header-left">
       <div class="header-icon">
@@ -297,96 +234,74 @@ export default function SymptomChecker() {
     </div>
     <div class="header-right">
       <div class="label">Patient Information</div>
-      <div class="value" style="color:#000;">${patientName || 'ANONYMOUS'}</div>
+      <div class="value">${patientName || 'ANONYMOUS'}</div>
       <div style="font-size:9px;color:#64748b;">${patientEmail || 'No Email'} &bull; ${patientPhone || 'No Phone'}</div>
       <div class="label" style="margin-top:10px;">Generated On</div>
       <div class="value">${date}</div>
     </div>
   </div>
-
-  <!-- DISCLAIMER BANNER -->
   <div style="background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
     <span style="font-size:16px;flex-shrink:0;">⚠️</span>
-    <p style="font-size:10px;color:#92400e;font-weight:700;line-height:1.6;"><strong>IMPORTANT:</strong> This is an AI-generated health assessment — NOT a medical diagnosis. This document is for informational purposes only. Always consult a licensed physician before making any health decisions.</p>
+    <p style="font-size:10px;color:#92400e;font-weight:700;line-height:1.6;"><strong>IMPORTANT:</strong> This is an AI-generated health assessment — NOT a medical diagnosis. Always consult a licensed physician.</p>
   </div>
-
-  <!-- SUMMARY -->
   <div class="summary">
     <div class="label">AI Assessment Summary</div>
     <p>Based on <strong>${selectedSymptoms.length}</strong> reported symptom${selectedSymptoms.length !== 1 ? 's' : ''}, the AI identified <strong>${(aiResult.possibleConditions || []).length}</strong> possible condition(s). Risk level is assessed as <strong>${riskLevel}</strong>. ${aiResult.recommendedAction}</p>
   </div>
-
-    <!-- WHAT TO DO -->
-    <div class="actions-box">
-      <div class="section-title">Recommended Action</div>
-      <div class="action-item">
-        <div class="action-number">01</div>
-        <div>
-          <div class="action-label">Immediate Action</div>
-          <div class="action-text">${aiResult.recommendedAction}</div>
-        </div>
-      </div>
-      <div class="action-item action-divider">
-        <div class="action-number" style="color:#f1f5f9;">02</div>
-        <div>
-          <div class="action-label">Clinical Guidance</div>
-          <div class="action-text recovery">${aiResult.clinicalAdvice || aiResult.advice || 'Consult a licensed physician for a full evaluation.'}</div>
-        </div>
-      </div>
-      <div class="action-item action-divider">
-        <div class="action-number" style="color:#f1f5f9;">03</div>
-        <div>
-          <div class="action-label">Lifestyle &amp; Recovery</div>
-          <div class="action-text recovery">${aiResult.lifestyleAdvice || 'Rest and maintain adequate fluid intake for 48 hours.'}</div>
-        </div>
+  <div class="actions-box">
+    <div class="section-title">Recommended Action</div>
+    <div class="action-item">
+      <div class="action-number">01</div>
+      <div>
+        <div class="action-label">Immediate Action</div>
+        <div class="action-text">${aiResult.recommendedAction}</div>
       </div>
     </div>
-
-    <!-- METRIC TABLE -->
-    <div class="table-box">
-      <table>
-        <thead>
-          <tr>
-            <th>Clinical Parameter</th>
-            <th>Reading</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Risk Level</td><td style="color:${riskColor};font-weight:800;">${riskLevel}</td></tr>
-          <tr><td>Most Likely Condition</td><td class="val-black">${topCondition}</td></tr>
-          <tr><td>Symptoms Reported</td><td class="val-black">${selectedSymptoms.length}</td></tr>
-          <tr><td>Recommended Specialist</td><td class="val-blue">${aiResult.recommendedSpecialty}</td></tr>
-        </tbody>
-      </table>
+    <div class="action-item action-divider">
+      <div class="action-number" style="color:#f1f5f9;">02</div>
+      <div>
+        <div class="action-label">Clinical Guidance</div>
+        <div class="action-text" style="font-weight:400;color:#475569;">${aiResult.clinicalAdvice || aiResult.advice || 'Consult a licensed physician for a full evaluation.'}</div>
+      </div>
+    </div>
+    <div class="action-item action-divider">
+      <div class="action-number" style="color:#f1f5f9;">03</div>
+      <div>
+        <div class="action-label">Lifestyle &amp; Recovery</div>
+        <div class="action-text" style="font-weight:400;color:#475569;">${aiResult.lifestyleAdvice || 'Rest and maintain adequate fluid intake for 48 hours.'}</div>
+      </div>
     </div>
   </div>
-
-  <!-- RISK + SPECIALIST -->
+  <div class="table-box">
+    <table>
+      <thead><tr><th>Clinical Parameter</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>Risk Level</td><td style="color:${riskColor};font-weight:800;">${riskLevel}</td></tr>
+        <tr><td>Most Likely Condition</td><td style="color:#000;font-weight:700;">${topCondition}</td></tr>
+        <tr><td>Symptoms Reported</td><td style="color:#000;font-weight:700;">${selectedSymptoms.length}</td></tr>
+        <tr><td>Recommended Specialist</td><td style="color:#007B7F;font-weight:700;">${aiResult.recommendedSpecialty}</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="bottom-row">
-    <!-- RISK INDICATOR -->
     <div class="chart-box">
       <div class="chart-label">Risk Level</div>
       <div style="font-size:28px;margin:6px 0;">${riskLevel === 'Critical' ? '🚨' : riskLevel === 'Urgent' ? '⚠️' : riskLevel === 'Moderate' ? '🔶' : '✅'}</div>
       <div style="font-size:10px;font-weight:800;color:${riskColor};text-transform:uppercase;text-align:center;">${riskLevel}</div>
     </div>
-
-    <!-- SPECIALIST -->
     <div class="specialist-box">
       <div class="specialist-icon">${(aiResult.recommendedSpecialty || 'D')[0]}</div>
       <div>
         <div class="specialist-label">Recommended Specialist</div>
         <div class="specialist-name">${aiResult.recommendedSpecialty}</div>
-        <div class="specialist-note">Please book an appointment at the earliest convenience.</div>
+        <div style="font-size:9px;color:#94a3b8;margin-top:3px;">Please book an appointment at the earliest convenience.</div>
       </div>
     </div>
   </div>
-
-  <!-- FOOTER -->
   <div class="footer">
     <p>Disclaimer: This is an AI-generated report. Always consult a licensed physician before making medical decisions.</p>
     <p>CareBridge AI &bull; ${new Date().getFullYear()}</p>
   </div>
-
 </body>
 </html>`;
 
@@ -398,158 +313,162 @@ export default function SymptomChecker() {
         setTimeout(() => { printWindow.print(); }, 600);
     };
 
-    return (
-        <div className="min-h-screen bg-[#05080d] text-slate-200 font-sans selection:bg-blue-500/30">
-            {/* FUTURISTIC MESH BACKGROUND */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px] animate-pulse-slow deleay-1000"></div>
-                <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-indigo-600/15 rounded-full blur-[100px]"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
-            </div>
+    // Progress Steps
+    const steps = ['Symptoms', 'Analysis', 'Results', 'Booking'];
 
-            {/* HEADER / BRANDING */}
-            <nav className="relative z-20 border-b border-white/5 bg-black/20 backdrop-blur-md px-6 py-4">
-                <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="w-21 h-14 rounded-xl overflow-hidden shadow-xl group-hover:scale-105 transition-transform flex-shrink-0 border border-white/5">
-                            <img src="/logo.png" alt="CareBridge" className="w-full h-full object-contain" onError={(e)=>{e.target.style.display='none';}}/>
-                        </div>
-                        <div className="hidden sm:block">
-                            <span className="text-xl font-black tracking-tighter text-white">Care<span className="text-emerald-400">Bridge</span></span>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Neural Diagnostic Active</span>
+    const renderProgressBar = (current) => (
+        <div className="mb-10">
+            <div className="flex items-center justify-between mb-3">
+                {steps.map((label, i) => {
+                    const stepNum = i + 1;
+                    const isActive = stepNum === current;
+                    const isDone = stepNum < current;
+                    return (
+                        <div key={label} className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                                isDone ? 'bg-primary border-primary text-white' :
+                                isActive ? 'border-primary text-primary bg-white' :
+                                'border-gray-200 text-gray-400 bg-white'
+                            }`} style={isDone ? tealGradient : {}}>
+                                {isDone ? (
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                ) : stepNum}
                             </div>
+                            <span className={`text-xs font-label font-semibold hidden sm:block ${isActive ? 'text-primary' : isDone ? 'text-gray-600' : 'text-gray-400'}`}>
+                                {label}
+                            </span>
+                            {i < steps.length - 1 && (
+                                <div className={`h-px w-8 sm:w-16 md:w-24 mx-2 transition-all ${isDone ? 'bg-primary' : 'bg-gray-200'}`} style={isDone ? { background: '#007B7F' } : {}} />
+                            )}
                         </div>
-                    </div>
-                    <div className="hidden md:flex items-center gap-6">
-                        <button onClick={() => setShowEmergencyProtocol(true)} className="text-sm font-bold text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>Emergency Protocol</button>
-                        <button className="text-sm font-bold text-slate-400 hover:text-white transition-colors underline decoration-blue-500 underline-offset-8">Symptom Engine</button>
-                        <div className="h-4 w-px bg-white/10"></div>
-                        <div className="flex items-center gap-2">
-                             <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold">PT</div>
-                             <span className="text-xs font-bold">Guest Patient</span>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+                    );
+                })}
+            </div>
+        </div>
+    );
 
-            <div className="relative z-10 max-w-3xl mx-auto px-6 py-8 md:py-12">
-                
-                {/* HERO TEXT */}
+    return (
+        <div className="min-h-screen bg-neutral font-body">
+            <Header />
+
+            <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+
+                {/* Page Header */}
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight leading-tight">
-                        AI Symptom <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-emerald-400">Analysis Engine</span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#007B7F]/10 text-primary rounded-md font-label text-xs font-bold mb-4 tracking-wide uppercase">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        AI-Powered Analysis
+                    </div>
+                    <h1 className="font-headline font-extrabold text-4xl md:text-5xl text-on-surface leading-tight tracking-tight mb-4">
+                        AI Symptom <span className="text-primary">Checker</span>
                     </h1>
-                    <p className="text-slate-400 font-medium max-w-lg mx-auto text-base leading-relaxed">
-                        Fast, secure, and clinical-grade health matching powered by deep neural networks.
+                    <p className="text-on-surface-variant text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+                        Describe your symptoms and get an instant AI-powered health assessment matched with CareBridge specialists.
                     </p>
                 </div>
 
-                {/* MAIN GLASS CONTAINER */}
-                <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-2xl p-6 md:p-10 relative overflow-hidden">
-                    {/* Decorative element */}
-                    <div className="absolute -top-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
-                    
+                {/* Main Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-10">
                     {renderProgressBar(step)}
 
-                    {/* STEP 1: INPUT */}
+                    {/* ── STEP 1: INPUT ── */}
                     {step === 1 && (
-                        <div className="animate-fade-in relative z-10">
-                            {/* PATIENT PROFILE CARD */}
-                            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 mb-8 backdrop-blur-xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                                    <svg className="w-20 h-20 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                                </div>
-                                <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                    Patient Clinical Profile
+                        <div>
+                            {/* Patient Profile */}
+                            <div className="bg-[#F4FFFB] border border-[#007B7F]/10 rounded-xl p-6 mb-8">
+                                <h3 className="font-label text-xs font-bold text-primary uppercase tracking-widest mb-5 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-primary rounded-full" style={{ background: '#007B7F' }} />
+                                    Patient Information
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Full Identity</label>
-                                        <input 
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="font-label text-xs font-semibold text-gray-500 uppercase tracking-widest">Full Name</label>
+                                        <input
                                             type="text"
                                             placeholder="e.g. Naji Ahmad"
                                             value={patientName}
                                             onChange={(e) => setPatientName(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 focus:outline-none focus:border-blue-500/50 transition-all text-sm font-bold text-white placeholder:text-slate-700"
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-sm font-medium text-gray-900 placeholder:text-gray-300"
+                                            style={{ '--tw-ring-color': '#007B7F33' }}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Digital Mail</label>
-                                        <input 
+                                    <div className="space-y-1.5">
+                                        <label className="font-label text-xs font-semibold text-gray-500 uppercase tracking-widest">Email</label>
+                                        <input
                                             type="email"
                                             placeholder="naji@example.com"
                                             value={patientEmail}
                                             onChange={(e) => setPatientEmail(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 focus:outline-none focus:border-blue-500/50 transition-all text-sm font-bold text-white placeholder:text-slate-700"
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-sm font-medium text-gray-900 placeholder:text-gray-300"
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Contact Nexus</label>
-                                        <input 
+                                    <div className="space-y-1.5">
+                                        <label className="font-label text-xs font-semibold text-gray-500 uppercase tracking-widest">Phone</label>
+                                        <input
                                             type="tel"
                                             placeholder="+94 7X XXX XXXX"
                                             value={patientPhone}
                                             onChange={(e) => setPatientPhone(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 focus:outline-none focus:border-blue-500/50 transition-all text-sm font-bold text-white placeholder:text-slate-700"
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all text-sm font-medium text-gray-900 placeholder:text-gray-300"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <h2 className="text-xl font-black text-white mb-8 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 text-xs border border-blue-500/30">01</span>
-                                Clinical Observations
+                            <h2 className="font-headline font-bold text-xl text-on-surface mb-6 flex items-center gap-3">
+                                <span className="flex items-center justify-center w-7 h-7 rounded-lg text-white text-xs font-bold" style={tealGradient}>1</span>
+                                Describe Your Symptoms
                             </h2>
 
-                            <div className="space-y-10">
+                            <div className="space-y-6">
                                 {/* Autocomplete Input */}
                                 <div className="relative">
-                                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Begin typing symptoms</label>
-                                    <div className="relative group">
-                                        <input 
-                                            type="text" 
+                                    <label className="block font-label text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Search symptoms</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && searchTerm.trim()) {
-                                                    handleAddSymptom(searchTerm.trim());
-                                                }
+                                                if (e.key === 'Enter' && searchTerm.trim()) handleAddSymptom(searchTerm.trim());
                                             }}
-                                            placeholder="Headache, Chest pain, etc..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all text-white text-base placeholder:text-slate-600"
+                                            placeholder="Type a symptom and press Enter…"
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:border-primary/40 transition-all text-gray-900 font-medium placeholder:text-gray-400"
                                         />
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 bg-white/5 px-2 py-1 rounded text-[10px] font-bold border border-white/10">ESC</div>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-100 text-gray-400 px-2 py-1 rounded-md text-[10px] font-bold font-label">
+                                            ENTER
+                                        </div>
                                     </div>
-                                    
+
                                     {suggestions.length > 0 && (
-                                        <div className="absolute z-30 w-full mt-2 bg-[#0e1421] border border-white/10 rounded-2xl shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl">
+                                        <div className="absolute z-30 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
                                             {suggestions.map(s => (
-                                                <button 
+                                                <button
                                                     key={s}
                                                     onClick={() => handleAddSymptom(s)}
-                                                    className="w-full text-left px-6 py-4 hover:bg-blue-600/20 text-slate-300 hover:text-white border-b border-white/5 last:border-0 transition-all flex justify-between items-center group/item"
+                                                    className="w-full text-left px-5 py-3.5 hover:bg-[#F4FFFB] text-gray-700 hover:text-primary border-b border-gray-50 last:border-0 transition-all flex justify-between items-center font-label font-medium text-sm"
                                                 >
-                                                    <span className="font-bold">{s}</span>
-                                                    <span className="text-[10px] font-bold opacity-0 group-hover/item:opacity-100 bg-blue-500 text-white px-2 py-1 rounded transition-all">ADD</span>
+                                                    <span>{s}</span>
+                                                    <span className="text-[10px] font-bold text-primary bg-[#007B7F]/10 px-2.5 py-1 rounded-lg">+ Add</span>
                                                 </button>
                                             ))}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Quick Chips */}
+                                {/* Common Symptoms Chips */}
                                 <div>
-                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 px-1">Common Patterns:</label>
-                                    <div className="flex flex-wrap gap-2.5">
-                                        {COMMON_SYMPTOMS.filter(s => !selectedSymptoms.includes(s)).slice(0, 8).map(s => (
-                                            <button 
+                                    <label className="block font-label text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Common symptoms</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {COMMON_SYMPTOMS.filter(s => !selectedSymptoms.includes(s)).slice(0, 10).map(s => (
+                                            <button
                                                 key={s}
                                                 onClick={() => handleAddSymptom(s)}
-                                                className="px-5 py-2.5 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-slate-400 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all active:scale-95"
+                                                className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-label font-semibold text-gray-600 hover:bg-[#F4FFFB] hover:text-primary hover:border-primary/30 transition-all shadow-sm"
                                             >
                                                 + {s}
                                             </button>
@@ -557,16 +476,22 @@ export default function SymptomChecker() {
                                     </div>
                                 </div>
 
-                                {/* Selected Chips */}
+                                {/* Selected Symptoms */}
                                 {selectedSymptoms.length > 0 && (
-                                    <div className="p-6 bg-blue-600/5 rounded-3xl border border-blue-500/10 animate-scale-in">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-4">Current Symptom Profile:</p>
-                                        <div className="flex flex-wrap gap-2.5">
+                                    <div className="p-5 bg-[#F4FFFB] rounded-xl border border-[#007B7F]/10">
+                                        <p className="font-label text-xs font-bold text-primary uppercase tracking-widest mb-3">Selected symptoms ({selectedSymptoms.length})</p>
+                                        <div className="flex flex-wrap gap-2">
                                             {selectedSymptoms.map(s => (
-                                                <div key={s} className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl text-xs font-black shadow-[0_4px_15px_rgba(37,99,235,0.3)] animate-scale-in">
+                                                <div key={s} className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-xs font-label font-bold shadow-sm" style={tealGradient}>
                                                     <span>{s}</span>
-                                                    <button onClick={() => handleRemoveSymptom(s)} className="hover:text-blue-100 bg-white/10 rounded-full p-0.5" aria-label={`Remove ${s}`}>
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <button
+                                                        onClick={() => handleRemoveSymptom(s)}
+                                                        className="w-4 h-4 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition-colors"
+                                                        aria-label={`Remove ${s}`}
+                                                    >
+                                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
                                                     </button>
                                                 </div>
                                             ))}
@@ -574,249 +499,183 @@ export default function SymptomChecker() {
                                     </div>
                                 )}
 
-                                <div className="pt-10 flex justify-end">
-                                    <button 
+                                <div className="flex justify-end pt-2">
+                                    <button
                                         onClick={() => runAnalysis()}
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 px-10 rounded-xl transition-all shadow-xl shadow-blue-600/20 active:scale-95 flex items-center gap-3 text-xs uppercase tracking-widest group"
+                                        disabled={selectedSymptoms.length === 0 && !searchTerm.trim()}
+                                        className="flex items-center gap-3 text-white font-headline font-bold py-3.5 px-8 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style={tealGradient}
                                     >
-                                        Initiate Analysis
-                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                        Run AI Analysis
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* STEP 2: ANALYZING STATE */}
+                    {/* ── STEP 2: ANALYZING ── */}
                     {step === 2 && (
-                        <div className="py-16 flex flex-col items-center justify-center text-center animate-fade-in relative">
+                        <div className="py-20 flex flex-col items-center justify-center text-center">
                             <div className="relative w-20 h-20 mb-8">
-                                <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-ping opacity-75"></div>
-                                <div className="absolute inset-2 bg-emerald-500/10 rounded-full animate-ping delay-150"></div>
-                                <div className="relative w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_40px_rgba(37,99,235,0.4)] rotate-12 animate-float">
-                                    <svg className="w-10 h-10 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                <div className="absolute inset-0 rounded-full opacity-20 animate-ping" style={{ background: '#007B7F' }} />
+                                <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-6" style={tealGradient}>
+                                    <svg className="w-10 h-10 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                    </svg>
                                 </div>
                             </div>
-                            <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tighter italic">Processing <span className="text-blue-500">Clinical Data</span>...</h3>
-                            <p className="text-slate-500 max-w-sm font-medium text-sm">Cross-referencing symptom clusters against 140,000+ medical pathways and proprietary neural datasets.</p>
+                            <h3 className="font-headline font-bold text-2xl text-on-surface mb-3">Evaluating your symptoms…</h3>
+                            <p className="text-on-surface-variant max-w-sm font-label text-base leading-relaxed">
+                                Cross-referencing symptoms against global clinical datasets in real-time.
+                            </p>
                         </div>
                     )}
 
-                    {/* STEP 3: RESULTS & DOCTORS */}
+                    {/* ── STEP 3: RESULTS ── */}
                     {step === 3 && aiResult && (
-                        <div className="animate-fade-in relative z-10">
-
-                            {/* EMERGENCY MODAL */}
-                            {showEmergency && (
-                                <div className="fixed inset-0 z-[200] bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center">
-                                    <div className="text-7xl mb-6 animate-bounce">🚨</div>
-                                    <h2 className="text-3xl font-black text-red-400 mb-3 uppercase tracking-tight">Emergency Symptoms Detected</h2>
-                                    <p className="text-slate-200 max-w-md mb-2 leading-relaxed">Your reported symptoms may indicate a <strong>serious medical emergency</strong>. Do not wait — time is critical.</p>
-                                    <p className="text-red-300 text-sm font-bold mb-8 uppercase tracking-widest">Do NOT drive yourself. Call now.</p>
-                                    <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                                        <a href="tel:999" className="bg-red-600 hover:bg-red-500 text-white font-black py-4 px-10 rounded-2xl text-lg transition-all shadow-2xl shadow-red-900/50 flex items-center gap-3">
-                                            📞 Call Emergency (999)
-                                        </a>
-                                        <a href="tel:911" className="bg-red-900/60 hover:bg-red-900 border border-red-500/50 text-white font-black py-4 px-10 rounded-2xl text-lg transition-all flex items-center gap-3">
-                                            📞 Call 911
-                                        </a>
-                                    </div>
-                                    <button onClick={() => setShowEmergency(false)} className="text-slate-400 hover:text-white text-sm font-bold uppercase tracking-widest transition-colors border-b border-slate-600 pb-0.5">
-                                        I understand the risk — view AI assessment →
-                                    </button>
-                                </div>
-                            )}
-
-                            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 text-xs border border-emerald-500/30">02</span>
+                        <div>
+                            <h2 className="font-headline font-bold text-xl text-on-surface mb-6 flex items-center gap-3">
+                                <span className="flex items-center justify-center w-7 h-7 rounded-lg text-white text-xs font-bold" style={tealGradient}>2</span>
                                 AI Health Assessment
                             </h2>
 
-                            {/* RISK LEVEL BANNER */}
+                            {/* Risk Banner */}
                             {(() => {
                                 const risk = riskConfig[aiResult.riskLevel] || riskConfig.Low;
                                 return (
-                                    <div className={`mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border ${risk.bg} ${risk.border}`}>
+                                    <div className={`mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border ${risk.bg} ${risk.border}`}>
                                         <div className="flex items-center gap-4">
                                             <span className="text-3xl">{risk.icon}</span>
                                             <div>
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Risk Assessment</p>
-                                                <p className={`text-xl font-black ${risk.color} uppercase tracking-tighter`}>{risk.label}</p>
+                                                <p className="font-label text-xs font-bold text-gray-400 uppercase tracking-widest mb-0.5">Risk Assessment</p>
+                                                <p className={`font-headline font-bold text-xl ${risk.color} uppercase`}>{risk.label}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-sm font-bold ${risk.color} max-w-sm leading-snug`}>
+                                        <p className={`font-label font-semibold text-sm ${risk.color} max-w-xs leading-snug`}>
                                             {aiResult.recommendedAction}
-                                        </div>
+                                        </p>
                                     </div>
                                 );
                             })()}
 
-                            <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 mb-10 overflow-hidden relative group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-bl-full translate-x-12 -translate-y-12"></div>
-
-                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-10">
-                                    <div className="flex-1 space-y-8">
-
-                                        {/* PRIMARY CONDITION — Prominent Display */}
-                                        {aiResult.possibleConditions?.length > 0 && (
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1 px-1">Most Likely Condition</p>
-                                                <p className="text-2xl font-black text-white tracking-tighter leading-tight italic">{aiResult.possibleConditions[0].name}</p>
-                                                <p className="text-[9px] text-slate-500 font-bold mt-1 px-0.5">⚠ AI assessment only — not a confirmed diagnosis</p>
-                                            </div>
-                                        )}
-
-                                        {/* RANKED CONDITIONS LIST */}
-                                        {aiResult.possibleConditions?.length > 1 && (
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 px-1">Other Possibilities</p>
-                                                <div className="space-y-1.5">
-                                                    {aiResult.possibleConditions.slice(1).map((c, i) => (
-                                                        <div key={i} className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/5 border border-white/5">
-                                                            <span className="font-bold text-sm text-slate-400">{c.name}</span>
-                                                            <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${
-                                                                c.likelihood === 'Possible'
-                                                                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
-                                                                    : 'bg-white/5 text-slate-500 border border-white/5'
-                                                            }`}>{c.likelihood}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {(!aiResult.possibleConditions || aiResult.possibleConditions.length === 0) && (
-                                            <p className="text-slate-500 text-sm font-medium px-1">Could not identify a specific condition — please see a GP.</p>
-                                        )}
-
+                            {/* Main Results Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                {/* Conditions */}
+                                <div className="md:col-span-2 bg-gray-50 border border-gray-100 rounded-xl p-6 space-y-5">
+                                    {aiResult.possibleConditions?.length > 0 && (
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2 px-1">Clinical Guidance</p>
-                                            <p className="text-slate-300 font-medium leading-relaxed">{aiResult.clinicalAdvice}</p>
+                                            <p className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Most Likely Condition</p>
+                                            <p className="font-headline font-bold text-2xl text-on-surface">{aiResult.possibleConditions[0].name}</p>
+                                            <p className="font-label text-xs text-gray-400 mt-1">⚠ AI assessment only — not a confirmed diagnosis</p>
                                         </div>
-
-                                        <div className="flex flex-wrap items-center gap-4">
-                                            <button
-                                                onClick={() => setShowReport(true)}
-                                                className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-6 py-3 rounded-xl border border-emerald-500/20 transition-all active:scale-95"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                                View Health Report
-                                            </button>
-                                            {aiResult.possibleConditions?.length > 0 && (
-                                                <div className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl">
-                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Identified:</span>
-                                                    <span className="text-sm font-black text-white italic">{aiResult.possibleConditions[0].name}</span>
-                                                </div>
-                                            )}
+                                    )}
+                                    {aiResult.possibleConditions?.length > 1 && (
+                                        <div>
+                                            <p className="font-label text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Other Possibilities</p>
+                                            <div className="space-y-2">
+                                                {aiResult.possibleConditions.slice(1).map((c, i) => (
+                                                    <div key={i} className="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-gray-100">
+                                                        <span className="font-label font-semibold text-sm text-gray-700">{c.name}</span>
+                                                        <span className={`font-label text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${c.likelihood === 'Possible' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                            {c.likelihood}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
+                                    )}
+                                    {(!aiResult.possibleConditions || aiResult.possibleConditions.length === 0) && (
+                                        <p className="text-gray-500 font-label text-sm">Could not identify a specific condition — please consult a GP.</p>
+                                    )}
+                                    <div>
+                                        <p className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-2">Clinical Guidance</p>
+                                        <p className="text-gray-700 font-label font-medium text-sm leading-relaxed">{aiResult.clinicalAdvice}</p>
                                     </div>
-
-                                    {/* Disease Name + Match Score Panel */}
-                                    <div className="w-full md:w-52 bg-white/5 p-5 rounded-2xl border border-white/10 text-center relative overflow-hidden backdrop-blur-md flex-shrink-0">
-                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">AI Diagnosis</p>
-
-                                        {/* Disease Name — large & prominent */}
-                                        <p className="text-lg font-black text-white tracking-tighter italic leading-tight mb-4">
-                                            {aiResult.possibleConditions?.[0]?.name || '—'}
-                                        </p>
-
-                                        {/* Match % */}
-                                        <div className="text-3xl font-black text-white mb-3 tracking-tighter italic">
-                                            {aiResult.matchScore || '—'}
-                                        </div>
-
-                                        {/* Progress bar */}
-                                        <div className="w-full bg-white/5 rounded-full h-2 shadow-inner">
-                                            <div
-                                                className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-1000"
-                                                style={{ width: aiResult.matchScore || '0%' }}
-                                            ></div>
-                                        </div>
-                                        <div className="mt-3 flex justify-between text-[10px] font-bold text-slate-500 px-1 uppercase tracking-tighter">
-                                            <span>Baseline</span>
-                                            <span>Match</span>
-                                        </div>
+                                    <div className="flex flex-wrap gap-3 pt-2">
+                                        <button
+                                            onClick={() => setShowReport(true)}
+                                            className="inline-flex items-center gap-2 font-label text-xs font-bold text-primary bg-[#007B7F]/10 hover:bg-[#007B7F]/20 px-5 py-2.5 rounded-lg border border-[#007B7F]/20 transition-all"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            View Health Report
+                                        </button>
                                     </div>
+                                </div>
+
+                                {/* Match Score Panel */}
+                                <div className="bg-white border border-gray-100 rounded-xl p-6 text-center shadow-sm flex flex-col items-center justify-center">
+                                    <div className="w-full h-1 rounded-full mb-6" style={tealGradient} />
+                                    <p className="font-label text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Neural Confidence</p>
+                                    <div className="font-headline font-extrabold text-4xl text-on-surface mb-4">{aiResult.matchScore || '—'}</div>
+                                    <div className="w-full bg-gray-100 rounded-full h-2.5 mb-4">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-1000"
+                                            style={{ width: aiResult.matchScore || '0%', ...tealGradient }}
+                                        />
+                                    </div>
+                                    <p className="font-label text-xs font-semibold text-primary">Positive Mapping</p>
+                                    <div className="h-px w-10 bg-gray-100 my-2" />
+                                    <p className="font-label text-xs text-gray-400">Baseline Match Score</p>
                                 </div>
                             </div>
 
-                            {/* FOLLOW-UP QUESTIONS (Feedback Loop) */}
+                            {/* Follow-Up Questions */}
                             {aiResult.isAmbiguous && aiResult.followUpQuestions?.length > 0 && (
-                                <div className="mb-12 p-8 bg-blue-600/[0.03] border border-blue-500/20 rounded-[2rem] relative">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/30">
-                                            <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
+                                <div className="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-xl relative">
+                                    <div className="flex items-center gap-3 mb-5">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 border border-blue-200">
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
                                         </div>
                                         <div>
-                                            <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.2em]">Clarification Engine</h3>
-                                            <p className="text-sm text-slate-400 font-bold">Additional clinical markers identified</p>
+                                            <h3 className="font-label text-xs font-bold text-blue-700 uppercase tracking-widest">Clarification Needed</h3>
+                                            <p className="font-label text-sm text-blue-600 font-medium">Additional markers help refine your assessment</p>
                                         </div>
                                     </div>
-                                    
-                                    <div className="space-y-4 relative">
-                                        {/* Updating Overlay */}
+                                    <div className="space-y-3 relative">
                                         {isAnalyzing && (
-                                            <div className="absolute inset-0 z-20 bg-slate-950/60 backdrop-blur-[2px] rounded-3xl flex items-center justify-center animate-fade-in">
-                                                <div className="flex flex-col items-center gap-4">
-                                                    <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-                                                    <p className="text-white font-black text-sm uppercase tracking-widest italic">Updating Assessment...</p>
+                                            <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" style={{ borderTopColor: '#007B7F' }} />
+                                                    <p className="font-label font-bold text-sm text-primary">Updating assessment…</p>
                                                 </div>
                                             </div>
                                         )}
                                         {aiResult.followUpQuestions.map((q, idx) => (
-                                            <div key={q} className={`bg-white/5 p-5 rounded-2xl border transition-all group ${clickedQuestionIdx === idx ? 'border-blue-500/50 bg-blue-500/5' : 'border-white/5 hover:bg-white/10'} flex flex-col sm:flex-row sm:items-center justify-between gap-6`}>
-                                                <p className={`font-bold text-base transition-colors ${clickedQuestionIdx === idx ? 'text-blue-400' : 'text-white'}`}>{q}</p>
-                                                <div className="flex gap-3">
-                                                    <button 
+                                            <div
+                                                key={q}
+                                                className={`bg-white p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${clickedQuestionIdx === idx ? 'border-blue-300 bg-blue-50' : 'border-gray-100 hover:border-blue-200'}`}
+                                            >
+                                                <p className={`font-label font-semibold text-sm ${clickedQuestionIdx === idx ? 'text-blue-700' : 'text-gray-800'}`}>{q}</p>
+                                                <div className="flex gap-2 shrink-0">
+                                                    <button
                                                         disabled={isAnalyzing}
                                                         onClick={() => {
                                                             setClickedQuestionIdx(idx);
-                                                            
-                                                            // 1. Clean the symptom from the question
                                                             const cleanSymptom = q
                                                                 .replace(/^(Is the|Does the|Do you|Has the|Have you|Is there|When did|Are you experiencing|Are you also experiencing|Are you feeling|Do you notice|Is your|Have you felt|Any)\s+/i, '')
                                                                 .replace(/\?$/, '')
                                                                 .trim();
-                                                            
-                                                            // 2. Clear this question immediately for UI responsiveness
-                                                            setAiResult(prev => ({
-                                                                ...prev,
-                                                                followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx)
-                                                            }));
-
-                                                            // 3. Update symptoms and trigger analysis
+                                                            setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }));
                                                             const newList = [...new Set([...selectedSymptoms, cleanSymptom])];
                                                             setSelectedSymptoms(newList);
                                                             runAnalysis(newList);
                                                         }}
-                                                        className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl flex items-center gap-2 ${
-                                                            isAnalyzing && clickedQuestionIdx === idx
-                                                                ? 'bg-blue-600/50 text-white/50 cursor-wait'
-                                                                : isAnalyzing
-                                                                ? 'bg-blue-600/20 text-white/30 cursor-not-allowed'
-                                                                : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
-                                                        }`}
+                                                        className={`px-5 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-wide transition-all ${isAnalyzing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-white hover:opacity-90'}`}
+                                                        style={isAnalyzing ? {} : tealGradient}
                                                     >
-                                                        {isAnalyzing && clickedQuestionIdx === idx ? (
-                                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                        ) : (
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                                        )}
-                                                        {isAnalyzing && clickedQuestionIdx === idx ? 'Analysing...' : 'Yes'}
+                                                        {isAnalyzing && clickedQuestionIdx === idx ? 'Updating…' : 'Yes'}
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         disabled={isAnalyzing}
-                                                        onClick={() => {
-                                                            setAiResult(prev => ({
-                                                                ...prev,
-                                                                followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx)
-                                                            }));
-                                                        }}
-                                                        className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
-                                                            isAnalyzing 
-                                                                ? 'bg-white/5 text-slate-500 border-white/5 cursor-not-allowed'
-                                                                : 'bg-white/5 text-slate-400 hover:bg-white/10 border-white/5'
-                                                        }`}
+                                                        onClick={() => setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }))}
+                                                        className={`px-5 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-wide border transition-all ${isAnalyzing ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-200'}`}
                                                     >
                                                         No
                                                     </button>
@@ -827,387 +686,384 @@ export default function SymptomChecker() {
                                 </div>
                             )}
 
-                            <div className="mt-12">
-                                <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight flex justify-between items-end">
-                                    Strategic Consultations
-                                    <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-4 py-1.5 rounded-full uppercase tracking-widest">{aiResult.recommendedSpecialty}</span>
+                            {/* Doctor Recommendations */}
+                            <div className="mt-8">
+                                <h3 className="font-headline font-bold text-lg text-on-surface mb-6 flex items-center justify-between">
+                                    Available Specialists
+                                    <span className="font-label text-xs font-bold text-primary bg-[#007B7F]/10 border border-[#007B7F]/20 px-4 py-1.5 rounded-full">
+                                        {aiResult.recommendedSpecialty}
+                                    </span>
                                 </h3>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {doctors.length > 0 ? doctors.slice(0, 4).map(doc => (
-                                        <div key={doc._id} className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:border-blue-500/50 hover:bg-white/[0.08] transition-all group cursor-pointer" onClick={() => handleDoctorSelect(doc)}>
+                                        <div
+                                            key={doc._id}
+                                            onClick={() => handleDoctorSelect(doc)}
+                                            className="bg-white border border-gray-100 rounded-xl p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
+                                        >
                                             <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-xl flex justify-center items-center font-black text-xl shadow-xl shadow-blue-900/40">
+                                                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-headline font-bold text-xl shadow-sm" style={tealGradient}>
                                                     {(doc.name || doc.firstName || 'D')[0]}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-white text-base tracking-tight group-hover:text-blue-400 transition-colors">{doc.name || `${doc.firstName} ${doc.lastName}`}</h4>
-                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{doc.specialization || 'Clinical Expert'}</p>
+                                                    <h4 className="font-headline font-bold text-gray-900 group-hover:text-primary transition-colors">{doc.name || `${doc.firstName} ${doc.lastName}`}</h4>
+                                                    <p className="font-label text-xs font-semibold text-gray-400 uppercase tracking-widest">{doc.specialization || 'Clinical Expert'}</p>
                                                 </div>
                                             </div>
-                                            <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                                            <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Available Today</span>
+                                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                    <span className="font-label text-xs font-bold text-emerald-600 uppercase tracking-widest">Available Now</span>
                                                 </div>
-                                                <div className="text-blue-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                                                </div>
+                                                <svg className="w-5 h-5 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                                </svg>
                                             </div>
                                         </div>
                                     )) : (
-                                        <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
-                                            <p className="text-slate-500 font-bold">No Neural Matching Specialists found. Refer to General Triage.</p>
+                                        <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-200 rounded-xl">
+                                            <p className="text-gray-400 font-label font-medium">No matching specialists found. Please visit the General Triage desk.</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                            
-                            <div className="pt-12 mt-12 border-t border-white/5 flex justify-between">
-                                <button 
+
+                            <div className="pt-8 mt-8 border-t border-gray-100 flex justify-between items-center">
+                                <button
                                     onClick={() => setStep(1)}
-                                    className="text-slate-500 hover:text-white font-bold px-6 py-2 transition-colors uppercase tracking-widest text-[10px]"
+                                    className="text-gray-400 hover:text-primary font-label font-semibold text-sm px-4 py-2 transition-colors flex items-center gap-2"
                                 >
-                                    &larr; Re-run Clinical Model
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                    </svg>
+                                    Re-enter Symptoms
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* STEP 4: CALENDAR BOOKING */}
+                    {/* ── STEP 4: BOOKING ── */}
                     {step === 4 && selectedDoctor && (
-                        <div className="animate-fade-in relative z-10">
-                            <h2 className="text-xl font-black text-white mb-8 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 text-xs border border-indigo-500/30">03</span>
-                                Appointment Synchronization
+                        <div>
+                            <h2 className="font-headline font-bold text-xl text-on-surface mb-8 flex items-center gap-3">
+                                <span className="flex items-center justify-center w-7 h-7 rounded-lg text-white text-xs font-bold" style={tealGradient}>3</span>
+                                Book Your Appointment
                             </h2>
 
-                            <div className="flex flex-col md:flex-row gap-10">
-                                <div className="flex-1 space-y-8">
-                                    
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Target Date</label>
-                                        <input 
-                                            type="date" 
+                            <div className="flex flex-col md:flex-row gap-8">
+                                {/* Left: Date & Time */}
+                                <div className="flex-1 space-y-6">
+                                    <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+                                        <label className="block font-label text-xs font-bold text-primary uppercase tracking-widest mb-4">Select Date</label>
+                                        <input
+                                            type="date"
                                             value={selectedDate}
                                             onChange={e => setSelectedDate(e.target.value)}
-                                            min={new Date().toISOString().split('T')[0]} 
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-indigo-500 text-white font-bold"
+                                            min={new Date().toISOString().split('T')[0]}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:border-primary/40 text-gray-900 font-label font-semibold text-base"
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Priority Access Slots</label>
+                                    <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+                                        <label className="block font-label text-xs font-bold text-primary uppercase tracking-widest mb-4">Select Time</label>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                             {['09:00 AM', '10:30 AM', '01:00 PM', '02:30 PM', '04:00 PM'].map(time => (
-                                                <button 
+                                                <button
                                                     key={time}
                                                     onClick={() => setSelectedTime(time)}
-                                                    className={`py-3 px-4 border-2 rounded-2xl text-xs font-black transition-all uppercase tracking-tighter ${
-                                                        selectedTime === time 
-                                                        ? 'border-indigo-600 bg-indigo-600/10 text-indigo-400 shadow-[0_0_15px_rgba(79,70,229,0.3)]' 
-                                                        : 'border-white/5 text-slate-500 hover:border-indigo-500/50'
+                                                    className={`py-3.5 px-4 border-2 rounded-xl font-label text-xs font-bold transition-all uppercase tracking-wide ${
+                                                        selectedTime === time
+                                                            ? 'text-white border-transparent'
+                                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-primary/30 hover:text-primary'
                                                     }`}
+                                                    style={selectedTime === time ? tealGradient : {}}
                                                 >
                                                     {time}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
-
                                 </div>
 
-                                <div className="w-full md:w-80 bg-white/5 border border-white/10 rounded-[2rem] p-8 h-max backdrop-blur-md">
-                                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Secure Confirmation</h4>
-                                    
+                                {/* Right: Summary Sidebar */}
+                                <div className="w-full md:w-80 bg-gray-900 rounded-2xl p-8 h-max sticky top-24 border border-gray-800">
+                                    <h4 className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-8 border-b border-white/10 pb-5" style={{ color: '#00B2A9' }}>
+                                        Booking Summary
+                                    </h4>
                                     <div className="space-y-6">
                                         <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-indigo-600/20 rounded-xl flex items-center justify-center text-indigo-400 shrink-0">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#00B2A9] border border-white/10">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
                                             </div>
                                             <div>
-                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Assigned Consultant</p>
-                                                <p className="font-bold text-white leading-tight">{selectedDoctor.name || selectedDoctor.firstName}</p>
-                                                <p className="text-[10px] font-bold text-indigo-400 mt-1">{selectedDoctor.specialization}</p>
+                                                <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Doctor</p>
+                                                <p className="font-headline font-bold text-white text-base leading-tight">{selectedDoctor.name || selectedDoctor.firstName}</p>
+                                                <p className="font-label text-xs font-semibold mt-0.5" style={{ color: '#00B2A9' }}>{selectedDoctor.specialization}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-emerald-600/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-emerald-400 border border-white/10">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                </svg>
                                             </div>
                                             <div>
-                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Diagnostic Target</p>
-                                                <p className="font-bold text-white leading-tight">{aiResult?.possibleConditions?.[0]?.name || 'See health report'}</p>
+                                                <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Condition</p>
+                                                <p className="font-headline font-bold text-white text-base leading-tight">{aiResult?.possibleConditions?.[0]?.name || 'Clinical Triage'}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 shrink-0">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-blue-400 border border-white/10">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
                                             </div>
                                             <div>
-                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Timestamp</p>
-                                                <p className="font-bold text-blue-400 leading-tight">{selectedDate || 'DATE_PENDING'}<br/>{selectedTime || 'TIME_PENDING'}</p>
+                                                <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Schedule</p>
+                                                <p className="font-headline font-bold text-primary text-base leading-snug" style={{ color: '#00B2A9' }}>
+                                                    {selectedDate || 'Select Date'}<br />{selectedTime || 'Select Slot'}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <div className="mt-10">
-                                        <button 
+
+                                    <div className="mt-8 space-y-3">
+                                        <button
                                             onClick={confirmBooking}
                                             disabled={isBooking || !selectedDate || !selectedTime}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-black py-3.5 px-4 rounded-xl transition-all shadow-xl shadow-indigo-600/20 active:scale-95 flex justify-center items-center uppercase tracking-widest text-[10px]"
+                                            className="w-full text-white font-headline font-bold py-4 px-6 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed font-label text-sm uppercase tracking-wide"
+                                            style={tealGradient}
                                         >
-                                            {isBooking ? 'Syncing...' : 'Finalize Reservation'}
+                                            {isBooking ? 'Booking…' : 'Confirm Appointment'}
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setStep(3)}
-                                            className="text-slate-500 hover:text-white font-bold py-2 mt-4 w-full text-[10px] uppercase tracking-widest transition-colors"
+                                            className="w-full text-gray-400 hover:text-white font-label font-semibold py-3 text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
                                         >
-                                            &larr; Adjust Diagnosis
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                            </svg>
+                                            Back to Results
                                         </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* REPORT MODAL */}
-                    {showReport && aiResult && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm print:hidden" onClick={() => setShowReport(false)}></div>
-                            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative z-[110] flex flex-col max-h-[90vh] overflow-y-auto border border-slate-200 animate-scale-in">
-                                {/* Header (Screen only) */}
-                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0 z-10 print:hidden">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 uppercase tracking-widest text-xs">AI Health Assessment</h3>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Not a Medical Diagnosis</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button onClick={downloadDossier} className="px-4 py-2 flex items-center gap-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-bold text-[10px] uppercase tracking-widest" title="Instant Download">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                            Download PDF
-                                        </button>
-                                        <button onClick={() => setShowReport(false)} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-red-500 hover:text-white rounded-lg transition-all border border-slate-200">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                 {/* Report Content */}
-                                <div className="p-8 space-y-6 bg-white" id="clinical-report-content" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-
-                                    {/* Report Header */}
-                                    <div className="flex justify-between items-center border-b-2 border-black pb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 bg-blue-600 flex items-center justify-center text-white">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            </div>
-                                            <div>
-                                                <h1 className="text-xl font-black text-slate-900 tracking-tighter uppercase">Patient Diagnostic Report</h1>
-                                                <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-[0.2em]">CareBridge AI Clinical Systems &bull; Bridging Excellence</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Generated</p>
-                                            <p className="text-xs font-bold text-black">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Disclaimer Banner */}
-                                    <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 flex items-start gap-3">
-                                        <span className="text-amber-500 text-lg flex-shrink-0">⚠️</span>
-                                        <p className="text-[10px] text-amber-800 font-bold leading-relaxed">
-                                            <strong>IMPORTANT:</strong> This is an AI-generated health assessment — NOT a medical diagnosis. This report is for informational purposes only. Always consult a licensed physician before making any health decisions.
-                                        </p>
-                                    </div>
-
-                                    {/* Patient Identification */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 border-y border-slate-200 py-6 px-4">
-                                        <div>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Patient Name</p>
-                                            <p className="text-xs font-black text-slate-900">{patientName || 'Anonymous'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Electronic Mail</p>
-                                            <p className="text-xs font-black text-slate-900">{patientEmail || 'Not Provided'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Contact Nexus</p>
-                                            <p className="text-xs font-black text-slate-900">{patientPhone || 'Not Provided'}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Summary */}
-                                    <div className="bg-blue-50 border-l-4 border-blue-600 p-4">
-                                        <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1.5">AI Assessment Summary</p>
-                                        <p className="text-sm text-slate-800 leading-relaxed">
-                                            Based on <strong>{selectedSymptoms.length}</strong> reported symptom{selectedSymptoms.length !== 1 ? 's' : ''}, the AI identified <span className="font-bold text-black">{(aiResult.possibleConditions || []).length}</span> possible condition{aiResult.possibleConditions?.length !== 1 ? 's' : ''}.
-                                            Risk level is assessed as <span className="font-bold text-black underline underline-offset-2">{aiResult.riskLevel}</span>.
-                                            Recommended action: {aiResult.recommendedAction}
-                                        </p>
-                                    </div>
-
-                                    {/* 2. ACTION ROADMAP (The "What to do" Part) */}
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
-                                        <div className="md:col-span-12">
-                                            <div className="bg-slate-50 border border-slate-200 p-6">
-                                                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 mb-6">Management Protocol & Suggestions</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    <div className="space-y-4">
-                                                        <div className="flex gap-4">
-                                                            <div className="text-xl font-bold text-blue-600">01</div>
-                                                            <div>
-                                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Primary Recommendation</p>
-                                                                <p className="text-sm font-bold text-slate-800 leading-snug">{aiResult.advice}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex gap-4 pt-2 border-t border-slate-100">
-                                                            <div className="text-xl font-bold text-slate-300">02</div>
-                                                            <div>
-                                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Recovery Guidance</p>
-                                                                <p className="text-xs text-slate-600 leading-relaxed font-bold">{aiResult.lifestyleAdvice || "Observe rest and maintain fluid intake for 48 hours."}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Metric Table (Visual Object 1) */}
-                                                    <div className="border border-slate-200">
-                                                        <table className="w-full text-left text-[10px]">
-                                                            <thead>
-                                                                <tr className="bg-slate-100 text-slate-900 uppercase tracking-widest">
-                                                                    <th className="px-4 py-2.5 font-bold">Clinical Parameter</th>
-                                                                    <th className="px-4 py-2.5 font-bold text-right">Index</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-100">
-                                                                <tr>
-                                                                    <td className="px-4 py-2 font-medium text-slate-500 italic">Risk Level</td>
-                                                                    <td className="px-4 py-2 text-right font-bold text-blue-600">{aiResult.riskLevel || 'N/A'}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td className="px-4 py-2 font-medium text-slate-500 italic">Symptoms Reported</td>
-                                                                    <td className="px-4 py-2 text-right font-bold text-slate-700">{selectedSymptoms.length}</td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 3. VISUALS (Chart & Specialist) */}
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10 mt-2">
-                                        {/* Intensity Chart (Visual Object 2) */}
-                                        <div className="md:col-span-1 border border-slate-200 p-4 flex flex-col items-center justify-center bg-white shadow-sm">
-                                            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-2">Risk Level</p>
-                                            <div className="text-xl font-black text-center leading-tight">
-                                                {aiResult.riskLevel === 'Critical' ? '🚨' : aiResult.riskLevel === 'Urgent' ? '⚠️' : aiResult.riskLevel === 'Moderate' ? '🔶' : '✅'}
-                                            </div>
-                                            <div className="text-[9px] font-black text-black mt-1 uppercase tracking-tight text-center">{aiResult.riskLevel}</div>
-                                        </div>
-
-                                        {/* Specialist Link */}
-                                        <div className="md:col-span-3 border border-slate-200 p-5 flex items-center justify-between bg-white shadow-sm">
-                                            <div className="flex items-center gap-5">
-                                                <div className="w-12 h-12 bg-black flex items-center justify-center text-white text-xl font-bold">
-                                                    {aiResult.recommendedSpecialty[0]}
-                                                </div>
-                                                <div>
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Recommended Professional</p>
-                                                    <p className="text-sm font-bold text-black tracking-tight underline">{aiResult.recommendedSpecialty}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-[8px] font-bold text-slate-300 italic">AUTO_REFERRAL_ENABED</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Footer Section */}
-                                    <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
-                                        <p className="text-[7px] text-slate-400 font-medium uppercase tracking-widest">Disclaimer: AI-generated report. Always consult a licensed physician.</p>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">CareBridge AI &bull; {new Date().getFullYear()}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
-            
-            {/* EMERGENCY PROTOCOL MODAL */}
-            {showEmergencyProtocol && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowEmergencyProtocol(false)}></div>
-                    <div className="relative z-10 bg-[#0d0f14] border border-red-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl shadow-red-900/30 animate-scale-in">
-                        {/* Header */}
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-red-500/20 rounded-2xl flex items-center justify-center text-2xl border border-red-500/30">🚨</div>
-                            <div>
-                                <h2 className="text-lg font-black text-red-400 uppercase tracking-tight">Emergency Protocol</h2>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">CareBridge Critical Response</p>
+            </main>
+
+            {/* ── REPORT MODAL ── */}
+            {showReport && aiResult && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowReport(false)} />
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-[110] flex flex-col max-h-[90vh] overflow-y-auto border border-gray-100">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={tealGradient}>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-headline font-bold text-gray-900 text-base">Clinical Report</h3>
+                                    <p className="font-label text-xs font-semibold text-primary mt-0.5">AI Analytical Output</p>
+                                </div>
                             </div>
-                            <button onClick={() => setShowEmergencyProtocol(false)} className="ml-auto w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={downloadDossier}
+                                    className="flex items-center gap-2 text-white font-label font-bold text-xs uppercase tracking-widest px-5 py-2.5 rounded-xl shadow-sm transition-all hover:opacity-90"
+                                    style={tealGradient}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Export PDF
+                                </button>
+                                <button
+                                    onClick={() => setShowReport(false)}
+                                    className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-xl transition-all border border-gray-100 hover:border-red-100"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Medical Emergency Panel */}
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5 mb-6">
-                            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Medical Emergency — Action Required</p>
-                            <p className="text-sm text-red-200 font-bold leading-relaxed">
-                                If you are experiencing a medical emergency, such as severe bleeding, a heart attack, or any life-threatening condition, immediately <span className="underline decoration-red-500">call emergency services</span>. Prompt action is crucial—do not wait for help to arrive.
-                            </p>
-                        </div>
-
-                        {/* Emergency Contacts */}
-                        <div className="space-y-3 mb-6">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Emergency Contacts</p>
-                            <a href="tel:999" className="flex items-center justify-between p-4 bg-red-600 hover:bg-red-500 rounded-2xl transition-all group">
+                        {/* Report Content */}
+                        <div className="p-6 space-y-5 bg-white">
+                            {/* Report Header */}
+                            <div className="flex justify-between items-center border-b-2 border-gray-900 pb-4">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xl">📞</span>
+                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white" style={tealGradient}>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
                                     <div>
-                                        <p className="font-black text-white text-sm">Call 999</p>
-                                        <p className="text-[10px] text-red-200">Ambulance / Police / Fire</p>
+                                        <h1 className="font-headline font-extrabold text-xl text-gray-900 uppercase">Clinical Assessment Report</h1>
+                                        <p className="font-label text-[10px] text-primary font-bold uppercase tracking-widest">CareBridge AI Clinical Systems</p>
                                     </div>
                                 </div>
-                                <svg className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                            </a>
-                            <a href="tel:911" className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xl">📞</span>
-                                    <div>
-                                        <p className="font-black text-white text-sm">Call 911</p>
-                                        <p className="text-[10px] text-slate-400">International Emergency</p>
+                                <div className="text-right">
+                                    <p className="font-label text-[9px] font-bold text-gray-400 uppercase tracking-widest">Generated</p>
+                                    <p className="font-label text-xs font-bold text-gray-900">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                </div>
+                            </div>
+
+                            {/* Disclaimer */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
+                                <span className="text-amber-500 text-lg flex-shrink-0">⚠️</span>
+                                <p className="font-label text-[10px] text-amber-800 font-bold leading-relaxed">
+                                    <strong>IMPORTANT:</strong> This is an AI-generated health assessment — NOT a medical diagnosis. Always consult a licensed physician before making any health decisions.
+                                </p>
+                            </div>
+
+                            {/* Patient Identification */}
+                            <div className="grid grid-cols-3 gap-4 bg-gray-50 border-y border-gray-200 py-5 px-4 rounded-xl">
+                                <div>
+                                    <p className="font-label text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Patient Name</p>
+                                    <p className="font-label text-xs font-black text-gray-900">{patientName || 'Anonymous'}</p>
+                                </div>
+                                <div>
+                                    <p className="font-label text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                                    <p className="font-label text-xs font-black text-gray-900">{patientEmail || 'Not Provided'}</p>
+                                </div>
+                                <div>
+                                    <p className="font-label text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Phone</p>
+                                    <p className="font-label text-xs font-black text-gray-900">{patientPhone || 'Not Provided'}</p>
+                                </div>
+                            </div>
+
+                            {/* Summary */}
+                            <div className="bg-[#F4FFFB] border-l-4 border-primary p-5 rounded-r-xl" style={{ borderLeftColor: '#007B7F' }}>
+                                <p className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-2">AI Assessment Summary</p>
+                                <p className="font-label text-sm text-gray-800 leading-relaxed">
+                                    Based on <strong className="text-gray-900">{selectedSymptoms.length}</strong> reported symptom{selectedSymptoms.length !== 1 ? 's' : ''}, the system identified{' '}
+                                    <strong className="text-gray-900">{(aiResult.possibleConditions || []).length}</strong> prospective condition(s). Risk level is{' '}
+                                    <strong className="text-gray-900 underline underline-offset-2">{aiResult.riskLevel}</strong>. {aiResult.recommendedAction}
+                                </p>
+                            </div>
+
+                            {/* Action Table */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
+                                    <p className="font-label text-[10px] font-bold text-gray-500 uppercase tracking-widest">Management Protocol</p>
+                                </div>
+                                <div className="p-5 space-y-4">
+                                    <div className="flex gap-4">
+                                        <span className="font-headline font-black text-xl text-primary" style={{ color: '#007B7F' }}>01</span>
+                                        <div>
+                                            <p className="font-label text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Clinical Mandate</p>
+                                            <p className="font-label text-sm font-semibold text-gray-800">{aiResult.advice || aiResult.recommendedAction}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-4 border-t border-gray-100 pt-4">
+                                        <span className="font-headline font-black text-xl text-gray-200">02</span>
+                                        <div>
+                                            <p className="font-label text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Recovery Guidance</p>
+                                            <p className="font-label text-sm text-gray-600">{aiResult.lifestyleAdvice || 'Observe rest and maintain fluid intake for 48 hours.'}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <svg className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                            </a>
-                        </div>
+                            </div>
 
-                        {/* Quick Signs */}
-                        <div className="bg-white/3 border border-white/5 rounded-2xl p-4">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Signs That Need Immediate Help</p>
-                            <ul className="space-y-1.5">
-                                {['Chest pain or pressure','Difficulty breathing','Face drooping or arm weakness','Severe bleeding or head injury','Loss of consciousness'].map((s, i) => (
-                                    <li key={i} className="flex items-center gap-2 text-xs text-slate-300 font-medium">
-                                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0"></span>{s}
-                                    </li>
-                                ))}
-                            </ul>
+                            {/* Metrics */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center text-center bg-gray-50">
+                                    <p className="font-label text-[7px] font-bold text-gray-400 uppercase tracking-widest mb-2">Risk Level</p>
+                                    <div className="text-2xl mb-1">
+                                        {aiResult.riskLevel === 'Critical' ? '🚨' : aiResult.riskLevel === 'Urgent' ? '⚠️' : aiResult.riskLevel === 'Moderate' ? '🔶' : '✅'}
+                                    </div>
+                                    <div className="font-label text-[9px] font-black text-gray-900 uppercase">{aiResult.riskLevel}</div>
+                                </div>
+                                <div className="md:col-span-3 border border-gray-200 rounded-xl p-4 flex items-center justify-between bg-white">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-headline font-bold text-lg" style={tealGradient}>
+                                            {aiResult.recommendedSpecialty[0]}
+                                        </div>
+                                        <div>
+                                            <p className="font-label text-[8px] font-bold text-gray-400 uppercase tracking-widest">Recommended Specialist</p>
+                                            <p className="font-headline font-bold text-gray-900">{aiResult.recommendedSpecialty}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="pt-4 border-t border-gray-100 flex justify-between items-center">
+                                <p className="font-label text-[7px] text-gray-400 uppercase tracking-widest">Disclaimer: AI-generated report. Always consult a licensed physician.</p>
+                                <p className="font-label text-[8px] font-bold text-gray-400 uppercase">CareBridge AI • {new Date().getFullYear()}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* FOOTER */}
-            <footer className="relative z-10 py-10 text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest bg-black/50">
-                <p>&copy; 2026 CareBridge AI &bull; Clinical Suite 3.4 &bull; All Protocols Secure</p>
-            </footer>
+            {/* ── EMERGENCY MODAL ── */}
+            {showEmergencyProtocol && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowEmergencyProtocol(false)} />
+                    <div className="relative z-10 bg-white border border-gray-100 rounded-2xl p-10 max-w-lg w-full shadow-2xl">
+                        <div className="flex items-center gap-5 mb-8">
+                            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-2xl border border-red-100">🚨</div>
+                            <div>
+                                <h2 className="font-headline font-black text-xl text-gray-900">Emergency Protocol</h2>
+                                <p className="font-label text-[10px] text-red-500 font-bold uppercase tracking-widest">CareBridge Critical Response</p>
+                            </div>
+                            <button
+                                onClick={() => setShowEmergencyProtocol(false)}
+                                className="ml-auto w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-all border border-gray-100"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-6">
+                            <p className="font-label text-[10px] font-bold text-red-700 uppercase tracking-widest mb-2">Critical Alert — Action Required</p>
+                            <p className="font-label text-sm text-gray-700 font-medium leading-relaxed">
+                                If you are experiencing a life-threatening emergency (severe chest pain, breathing failure, loss of consciousness), immediately{' '}
+                                <span className="font-bold text-red-700 underline underline-offset-2">contact local emergency services</span>.
+                            </p>
+                        </div>
+                        <div className="space-y-3">
+                            <p className="font-label text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Emergency Contacts</p>
+                            <a href="tel:999" className="flex items-center justify-between p-5 bg-red-600 hover:opacity-90 rounded-xl transition-all group shadow-lg">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-2xl">📞</span>
+                                    <div>
+                                        <p className="font-headline font-bold text-white text-base">Call 999</p>
+                                        <p className="font-label text-[10px] text-red-100 font-semibold uppercase tracking-widest">Ambulance / Police / Fire</p>
+                                    </div>
+                                </div>
+                                <svg className="w-6 h-6 text-white group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </a>
+                            <a href="tel:911" className="flex items-center justify-between p-5 bg-gray-900 hover:bg-black rounded-xl transition-all group shadow-lg">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-2xl">📞</span>
+                                    <div>
+                                        <p className="font-headline font-bold text-white text-base">Call 911</p>
+                                        <p className="font-label text-[10px] text-gray-500 font-semibold uppercase tracking-widest">International Emergency</p>
+                                    </div>
+                                </div>
+                                <svg className="w-6 h-6 text-gray-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <Footer />
         </div>
     );
 }
