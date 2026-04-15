@@ -1,9 +1,9 @@
-const nodemailer = require('nodemailer');
-const axios = require('axios');
+const nodemailer = require("nodemailer");
+const axios = require("axios");
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -13,16 +13,20 @@ const transporter = nodemailer.createTransport({
 // Helper to fetch details
 const getDetails = async (patientId, doctorId) => {
   try {
-     const pRes = await axios.get(`${process.env.PATIENT_SERVICE_URL}/api/patients`);
-     const dRes = await axios.get(`${process.env.DOCTOR_SERVICE_URL}/api/doctors`);
+    const pRes = await axios.get(
+      `${process.env.PATIENT_SERVICE_URL}/api/patients`,
+    );
+    const dRes = await axios.get(
+      `${process.env.DOCTOR_SERVICE_URL}/api/doctors`,
+    );
 
-     const patient = pRes.data.data.find(p => p._id === patientId);
-     const doctor = dRes.data.data.find(d => d._id === doctorId);
+    const patient = pRes.data.data.find((p) => p._id === patientId);
+    const doctor = dRes.data.data.find((d) => d._id === doctorId);
 
-     return { patient, doctor };
+    return { patient, doctor };
   } catch (err) {
-     console.warn('Could not fetch user info for notification:', err.message);
-     return { patient: null, doctor: null };
+    console.warn("Could not fetch user info for notification:", err.message);
+    return { patient: null, doctor: null };
   }
 };
 
@@ -33,12 +37,25 @@ const getDetails = async (patientId, doctorId) => {
  */
 const notifyBooking = async (req, res) => {
   try {
-    const { appointmentId, patientId, doctorId, date, timeSlot, doctorName, patientName, consultationFee } = req.body;
+    const {
+      appointmentId,
+      patientId,
+      doctorId,
+      date,
+      timeSlot,
+      doctorName,
+      patientName,
+      consultationFee,
+    } = req.body;
 
     const { patient, doctor } = await getDetails(patientId, doctorId);
 
     if (!patient || !doctor) {
-      return res.status(404).json({ message: 'Patient or Doctor details not found for notification' });
+      return res
+        .status(404)
+        .json({
+          message: "Patient or Doctor details not found for notification",
+        });
     }
 
     // Send email to Patient
@@ -46,7 +63,7 @@ const notifyBooking = async (req, res) => {
       const patientMailOptions = {
         from: process.env.EMAIL_USER,
         to: patient.email,
-        subject: 'Appointment Booking Confirmation',
+        subject: "Appointment Booking Confirmation",
         html: `
           <h3>Booking Confirmed!</h3>
           <p>Hello ${patientName},</p>
@@ -58,7 +75,7 @@ const notifyBooking = async (req, res) => {
             <li><strong>Fee Paid:</strong> LKR ${consultationFee}</li>
           </ul>
           <p>Thank you for using our telemedicine platform!</p>
-        `
+        `,
       };
       await transporter.sendMail(patientMailOptions);
     }
@@ -68,7 +85,7 @@ const notifyBooking = async (req, res) => {
       const doctorMailOptions = {
         from: process.env.EMAIL_USER,
         to: doctor.email,
-        subject: 'New Appointment Booking',
+        subject: "New Appointment Booking",
         html: `
           <h3>New Appointment Confirmed!</h3>
           <p>Hello Dr. ${doctorName},</p>
@@ -79,16 +96,15 @@ const notifyBooking = async (req, res) => {
             <li><strong>Time:</strong> ${timeSlot}</li>
           </ul>
           <p>Please check your dashboard for more details.</p>
-        `
+        `,
       };
       await transporter.sendMail(doctorMailOptions);
     }
 
-    res.status(200).json({ message: 'Booking notification sent successfully' });
-
+    res.status(200).json({ message: "Booking notification sent successfully" });
   } catch (error) {
-    console.error('Error sending booking notification:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    console.error("Error sending booking notification:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
@@ -97,11 +113,88 @@ const notifyBooking = async (req, res) => {
  * @route   POST /api/notify/completed
  * @access  Internal
  */
+
+/**
+ * @desc    Send Consultation Completed Notification
+ * @route   POST /api/notify/completed
+ * @access  Internal
+ */
 const notifyCompleted = async (req, res) => {
-  
+  try {
+    const {
+      appointmentId,
+      patientId,
+      doctorId,
+      date,
+      timeSlot,
+      doctorName,
+      patientName,
+      prescriptionLink,
+    } = req.body;
+
+    const { patient, doctor } = await getDetails(patientId, doctorId);
+
+    if (!patient || !doctor) {
+      return res
+        .status(404)
+        .json({
+          message: "Patient or Doctor details not found for notification",
+        });
+    }
+
+    // Send email to Patient
+    if (patient.email) {
+      const patientMailOptions = {
+        from: process.env.EMAIL_USER,
+        to: patient.email,
+        subject: "Consultation Completed",
+        html: `
+          <h3>Consultation Completed</h3>
+          <p>Hello ${patientName},</p>
+          <p>Your consultation with Dr. ${doctorName} has been completed.</p>
+          <ul>
+            <li><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</li>
+            <li><strong>Time:</strong> ${timeSlot}</li>
+          </ul>
+          ${prescriptionLink ? `<p>Your prescription: <a href="${prescriptionLink}">View Prescription</a></p>` : ""}
+          <p>Thank you for using our telemedicine platform!</p>
+        `,
+      };
+      await transporter.sendMail(patientMailOptions);
+    }
+
+    // Send email to Doctor
+    if (doctor.email) {
+      const doctorMailOptions = {
+        from: process.env.EMAIL_USER,
+        to: doctor.email,
+        subject: "Consultation Completed",
+        html: `
+          <h3>Consultation Completed</h3>
+          <p>Hello Dr. ${doctorName},</p>
+          <p>Your consultation with patient ${patientName} has been completed.</p>
+          <ul>
+            <li><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</li>
+            <li><strong>Time:</strong> ${timeSlot}</li>
+          </ul>
+          <p>Please check your dashboard for more details.</p>
+        `,
+      };
+      await transporter.sendMail(doctorMailOptions);
+    }
+
+    res
+      .status(200)
+      .json({
+        message: "Consultation completion notification sent successfully",
+      });
+  } catch (error) {
+    console.error("Error sending consultation completion notification:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
 
 module.exports = {
   notifyBooking,
-  notifyCompleted
+  notifyCompleted,
 };
