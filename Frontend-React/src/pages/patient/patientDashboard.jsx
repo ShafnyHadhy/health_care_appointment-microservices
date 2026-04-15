@@ -36,6 +36,7 @@ import {
   Trash2,
   ChevronRight,
 } from "lucide-react";
+import AppointmentModal from "./appointmentModel";
 
 export default function PatientDashboard() {
 
