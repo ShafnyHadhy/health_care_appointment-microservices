@@ -28,7 +28,10 @@ import {
   Footprints 
 } from 'lucide-react';
 
+import { useNavigate } from 'react-router-dom';
+
 export default function PatientDashboard() {
+  const navigate = useNavigate();
   const activityItems = [
     { 
       icon: <FlaskConical size={18} className="text-primary" />, 
@@ -107,11 +110,15 @@ export default function PatientDashboard() {
             {/* Shortcut Bento */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
               {[
-                { icon: <PlusCircle size={20} />, title: "Book Appointment", desc: "Schedule a new visit" },
-                { icon: <CloudUpload size={20} />, title: "Upload Report", desc: "Share medical files" },
-                { icon: <Bot size={20} />, title: "AI Symptom Checker", desc: "Instant health insights" }
+                { icon: <PlusCircle size={20} />, title: "Book Appointment", desc: "Schedule a new visit", path: "/role-selection" },
+                { icon: <CloudUpload size={20} />, title: "Upload Report", desc: "Share medical files", path: "/patient-dashboard" },
+                { icon: <Bot size={20} />, title: "AI Symptom Checker", desc: "Instant health insights", path: "/symptom-checker" }
               ].map((item) => (
-                <div key={item.title} className="bg-white border border-gray-200 hover:border-primary/40 transition-colors p-5 rounded-lg group cursor-pointer shadow-sm">
+                <div 
+                  key={item.title} 
+                  onClick={() => navigate(item.path)}
+                  className="bg-white border border-gray-200 hover:border-primary/40 transition-colors p-5 rounded-lg group cursor-pointer shadow-sm active:scale-[0.98]"
+                >
                   <div className="w-10 h-10 bg-primary/5 rounded-md flex items-center justify-center text-primary mb-3">
                     {item.icon}
                   </div>
