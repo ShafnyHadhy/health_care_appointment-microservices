@@ -39,6 +39,7 @@ const NAV = [
   { id:'users',        label:'User Management',     icon:'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
   { id:'appointments', label:'Appointments',         icon:'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
   { id:'reports',      label:'Reports & Analytics', icon:'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+  { id:'aiDiagnostics',label:'AI Diagnostics',      icon:'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -155,6 +156,7 @@ export default function AdminPage() {
   const [doctors,      setDoctors]      = useState([]);
   const [users,        setUsers]        = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [aiReports,    setAiReports]    = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [search,       setSearch]       = useState('');
   const [docFilter,    setDocFilter]    = useState('all');
@@ -180,14 +182,16 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const cfg = { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } };
-      const [dR, uR, aR] = await Promise.allSettled([
+      const [dR, uR, aR, aiR] = await Promise.allSettled([
         axios.get(`${API}/api/admin/users?type=doctor`, cfg),
         axios.get(`${API}/api/admin/users?type=patient`, cfg),
         axios.get(`${API}/api/admin/appointments`, cfg),
+        axios.get(`${API}/api/admin/ai-reports`, cfg),
       ]);
       if (dR.status==='fulfilled') setDoctors(dR.value.data?.data?.doctors || dR.value.data?.data || []);
       if (uR.status==='fulfilled') setUsers(uR.value.data?.data?.patients || uR.value.data?.data || []);
       if (aR.status==='fulfilled') setAppointments(aR.value.data?.data || []);
+      if (aiR.status==='fulfilled') setAiReports(aiR.value.data?.data || []);
     } catch(e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -252,6 +256,12 @@ export default function AdminPage() {
     if (search) a = a.filter(x => `${x.patientName||''} ${x.doctorName||''} ${x.status||''}`.toLowerCase().includes(search.toLowerCase()));
     return a;
   }, [appointments, apptFilter, search]);
+
+  const filtAiReports = useMemo(() => {
+    let r = [...aiReports];
+    if (search) r = r.filter(x => `${x.patientName||''} ${x.disease||''} ${x.riskLevel||''}`.toLowerCase().includes(search.toLowerCase()));
+    return r;
+  }, [aiReports, search]);
 
   const monthlyData = useMemo(() => MONTHS.map((m,i) => ({
     month:m,
@@ -567,6 +577,27 @@ export default function AdminPage() {
     );
   };
 
+  // ── Render: AI Diagnostics ────────────────────────────────────────────────
+  const renderAiDiagnostics = () => (
+    <Card noPad title="AI Diagnostic Intelligence">
+      <div style={{ padding:'0 24px 24px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:16, marginTop:-10 }}>
+        <Search value={search} onChange={setSearch} placeholder="Search by patient, disease or risk level…"/>
+      </div>
+      <Table cols={['Patient Info', 'Reported Symptoms', 'Predicted Disease', 'Risk Level', 'Analysis Date']} rows={filtAiReports.map((r,i) => (
+        <TR key={r._id||i} i={i}>
+          <TD>
+            <div style={{ fontWeight:800 }}>{r.patientName || 'Anonymous'}</div>
+            <div style={{ fontSize:11, color:C.dim }}>{r.patientEmail} • {r.patientPhone}</div>
+          </TD>
+          <TD sub><div style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis' }}>{(r.symptoms||[]).join(', ')}</div></TD>
+          <TD><span style={{ color:PRIMARY, fontWeight:700 }}>{r.disease}</span> <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>REC: {r.recommendedSpecialty}</div></TD>
+          <TD><Badge label={r.riskLevel||'Low'} color={r.riskLevel==='Critical'?'239,68,68':r.riskLevel==='Urgent'?'245,158,11':r.riskLevel==='Moderate'?'234,179,8':'16,185,129'}/></TD>
+          <TD sub>{fmtDate(r.createdAt)}</TD>
+        </TR>
+      ))} empty="No AI diagnostic reports have been generated yet."/>
+    </Card>
+  );
+
   // ── Edit Modal ────────────────────────────────────────────────────────────
   const EditModal = () => {
     const isCreate = editModal?.mode==='create';
@@ -692,6 +723,7 @@ export default function AdminPage() {
                 {active==='users'        && renderUsers()}
                 {active==='appointments' && renderAppointments()}
                 {active==='reports'      && renderReports()}
+                {active==='aiDiagnostics'&& renderAiDiagnostics()}
               </div>
             )
           }

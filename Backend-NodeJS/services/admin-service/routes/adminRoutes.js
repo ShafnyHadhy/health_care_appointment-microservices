@@ -21,7 +21,11 @@ const {
     markNotificationRead,
     chatbotAssistant
 } = require('../controllers/adminActionController');
+const { saveAiReport, getAiReports } = require('../controllers/aiReportController');
 const { protect, authorize } = require('../middleware/auth');
+
+// Public route for AI Reports (called by Symptom Checker)
+router.post('/ai-reports/public', saveAiReport);
 
 // Protected Admin routes
 router.use(protect);
@@ -47,5 +51,8 @@ router.post('/actions/gamification/award', awardPoints);
 router.get('/actions/notifications', getNotifications);
 router.patch('/actions/notifications/:id/read', markNotificationRead);
 router.post('/actions/chatbot', chatbotAssistant);
+
+// AI Reports
+router.get('/ai-reports', getAiReports);
 
 module.exports = router;

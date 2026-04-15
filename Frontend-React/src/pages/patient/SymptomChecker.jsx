@@ -107,6 +107,22 @@ export default function SymptomChecker() {
             if (response.data.success) {
                 const result = response.data.data;
                 setAiResult(result);
+                
+                // Silently save report for Admin Dashboard
+                try {
+                    await axios.post(`${apiUrl}/api/admin/ai-reports/public`, {
+                        patientName: patientName || 'Anonymous',
+                        patientEmail: patientEmail || 'Not Provided',
+                        patientPhone: patientPhone || 'Not Provided',
+                        symptoms: finalSymptoms,
+                        riskLevel: result.riskLevel || 'Low',
+                        disease: result.possibleConditions?.[0]?.name || 'Unspecified',
+                        recommendedSpecialty: result.recommendedSpecialty || 'General Practitioner'
+                    });
+                } catch (reportErr) {
+                    console.error('Failed to save AI report internally:', reportErr);
+                }
+
                 if (!isReAnalysis) {
                     setStep(3);
                     if (result.isEmergency) setTimeout(() => setShowEmergency(true), 400);
