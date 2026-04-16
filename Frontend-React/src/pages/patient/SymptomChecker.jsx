@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Header from '../../components/header';
 import Footer from '../../components/footer';
+import BookingModal from './bookingModel';
 
 const COMMON_SYMPTOMS = [
     'Headache', 'Fever', 'Cough', 'Nausea', 'Dizziness', 'Fatigue',
@@ -24,6 +25,7 @@ export default function SymptomChecker() {
     const [selectedSymptoms, setSelectedSymptoms] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [suggestions, setSuggestions] = useState([]);
+    const [selectedDoctorForBooking, setSelectedDoctorForBooking] = useState(null);
 
     // Step 2 & 3: AI & Doctor Results
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -175,10 +177,7 @@ export default function SymptomChecker() {
     };
 
     const handleDoctorSelect = (doc) => {
-        const wantsToBook = window.confirm(`Would you like to proceed to the main appointment portal to book a consultation with Dr. ${doc.name}?`);
-        if (wantsToBook) {
-            navigate('/find-doctor', { state: { selectedDoctor: doc } });
-        }
+        setSelectedDoctorForBooking(doc);
     };
 
     const downloadDossier = () => {
@@ -939,6 +938,14 @@ export default function SymptomChecker() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* ── BOOKING MODAL ── */}
+            {selectedDoctorForBooking && (
+                <BookingModal 
+                    doctor={selectedDoctorForBooking} 
+                    onClose={() => setSelectedDoctorForBooking(null)} 
+                />
             )}
 
             {/* ── EMERGENCY MODAL ── */}
