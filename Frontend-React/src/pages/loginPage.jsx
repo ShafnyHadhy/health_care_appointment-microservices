@@ -47,9 +47,6 @@ export default function LoginPage() {
 
       console.log("Logged in user:", user);
 
-      toast.success("Login successful!");
-
-      // role based
       if (user.role === "admin") {
         navigate("/admin");
       } else if (user.role === "doctor") {
