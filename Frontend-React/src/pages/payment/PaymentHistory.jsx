@@ -152,7 +152,7 @@ export default function PaymentHistory() {
                 {/* Transactions Section */}
                 <section className="bg-white rounded-[32px] shadow-xl shadow-primary/5 border-2 border-[#006063]/20 overflow-hidden">
                     {/* Filter Bar */}
-                    <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-[#006063]/10">
+                    <div className="p-8 flex items-center justify-center border-b-2 border-[#006063]/10">
                         <div className="relative flex-1 max-w-md">
                             <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary/40">search</span>
                             <input 
