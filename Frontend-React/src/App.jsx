@@ -48,7 +48,7 @@ function App() {
             element={<PaymentStatusPage />}
           />
           <Route path="/payment-history" element={<PaymentHistory />} />
-          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/success/:appointmentId" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
         </Routes>
       </div>

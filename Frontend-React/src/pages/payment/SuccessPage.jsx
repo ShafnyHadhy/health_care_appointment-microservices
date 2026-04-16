@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { 
     MdCheckCircle, MdSecurity, MdCreditCard, 
     MdVideocam, MdDescription, MdArrowForward, MdMedicalServices 
@@ -7,7 +9,25 @@ import {
 const tealAccent = { background: 'linear-gradient(135deg, #006063 0%, #007b7f 100%)' };
 
 export default function SuccessPage() {
+    const { appointmentId } = useParams();
     const navigate = useNavigate();
+    const [appointment, setAppointment] = useState(null);
+
+    useEffect(() => {
+        const fetchAppointment = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/status`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setAppointment(response.data.data);
+            } catch (error) {
+                console.error("Failed to fetch appointment data", error);
+            }
+        };
+        if (appointmentId) fetchAppointment();
+    }, [appointmentId]);
 
     return (
         <div className="bg-[#f8f9fa] text-[#191c1d] h-screen font-body selection:bg-[#007b7f]/10 flex flex-col overflow-hidden">
@@ -52,14 +72,14 @@ export default function SuccessPage() {
                                     </div>
                                     <div>
                                         <p className="text-[8px] font-black uppercase tracking-widest text-[#424752] opacity-50">Practitioner</p>
-                                        <p className="font-black text-[#191c1d] text-sm">Specialist Consultant</p>
+                                        <p className="font-black text-[#191c1d] text-sm">Dr. {appointment?.doctorName || 'Loading...'}</p>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#c2c6d4]/20">
                                     <div>
                                         <p className="text-[8px] font-black uppercase tracking-widest text-[#424752] opacity-50">Status</p>
-                                        <p className="font-black text-xs text-[#191c1d]">Confirmed</p>
+                                        <p className="font-black text-xs text-[#191c1d] uppercase">{appointment?.status || 'Loading'}</p>
                                     </div>
                                     <div>
                                         <p className="text-[8px] font-black uppercase tracking-widest text-[#424752] opacity-50">Method</p>
@@ -74,7 +94,7 @@ export default function SuccessPage() {
                             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
                             <div className="relative z-10">
                                 <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Paid</p>
-                                <p className="text-2xl font-black tracking-tighter">Rs.150.00</p>
+                                <p className="text-2xl font-black tracking-tighter">Rs.{appointment?.consultationFee || '...'}</p>
                             </div>
                             <div className="mt-4 relative z-10">
                                 <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest opacity-80 mb-2">
