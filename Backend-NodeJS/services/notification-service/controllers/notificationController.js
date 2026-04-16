@@ -22,7 +22,7 @@ if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {
 // Helper to send SMS
 const sendSMS = async (to, message) => {
   if (!twilioClient || !process.env.TWILIO_PHONE || !to) return;
-  
+
   // Format number for Twilio (Ensure E.164 format)
   let formattedTo = to.trim();
   if (formattedTo.startsWith('+')) {
@@ -45,7 +45,7 @@ const sendSMS = async (to, message) => {
       from: 'whatsapp:+14155238886', // Twilio Sandbox Number
       to: `whatsapp:${formattedTo}`,
     });
-    console.log(`\x1b[32m✅ WhatsApp sent successfully to ${formattedTo}\x1b[0m`);
+    console.log(`\x1b[32m WhatsApp sent successfully to ${formattedTo}\x1b[0m`);
   } catch (err) {
     // VIRTUAL NOTIFICATION LOG (For Viva Backup)
     console.log(`\n\x1b[36m┏━━━━━━━━━━━━ VIRTUAL NOTIFICATION (DEMO MODE) ━━━━━━━━━━━━┓\x1b[0m`);
@@ -55,7 +55,7 @@ const sendSMS = async (to, message) => {
     console.log(`\x1b[36m┃\x1b[0m \x1b[1mSTATUS:\x1b[0m \x1b[32mDISPATCHED SUCCESSFULLY [ENCRYPTED]\x1b[0m`);
     console.log(`\x1b[36m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1b[0m\n`);
 
-    console.warn(`\x1b[33m⚠️  Note: If you didn't get the message, make sure you sent the 'join' code to +1 415 523 8886\x1b[0m`);
+    console.warn(`\x1b[33m  Note: If you didn't get the message, make sure you sent the 'join' code to +1 415 523 8886\x1b[0m`);
   }
 };
 
@@ -64,7 +64,7 @@ const getDetails = async (patientId, doctorId) => {
   try {
     // Generate an internal system token since notifications don't have user tokens
     const token = jwt.sign(
-      { userId: 'system', role: 'admin', refId: 'system' }, 
+      { userId: 'system', role: 'admin', refId: 'system' },
       process.env.JWT_SECRET || 'your_jwt_secret_key_here',
       { expiresIn: '15m' }
     );
@@ -319,7 +319,7 @@ const notifyLogin = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    
+
     // Optional: send SMS if they eventually pass the phone number here
     // For now we just send the email
 
