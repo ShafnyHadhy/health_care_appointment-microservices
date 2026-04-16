@@ -45,7 +45,7 @@ const searchDoctors = async (req, res) => {
  * @access  Private (Patient)
  */
 const bookAppointment = async (req, res) => {
-  
+
   try {
 
     const { doctorId, date, timeSlot, reason } = req.body;
@@ -66,7 +66,7 @@ const bookAppointment = async (req, res) => {
       const docsRes = await axios.get(`${process.env.DOCTOR_SERVICE_URL}/api/doctors/appDoc`);
       const doctor = docsRes.data.data.find(d => d._id === doctorId);
 
-      if(doctor) {
+      if (doctor) {
         doctorName = doctor.name;
         consultationFee = doctor.consultationFee;
       }
@@ -93,24 +93,25 @@ const bookAppointment = async (req, res) => {
       isPaid: false
     })
 
-    // Notify user asynchronously via Notification Service
-
+    // Notify user asynchronously via Notification Service (Removed 'pending' notification for cleaner flow)
+    /*
     try {
       if (process.env.NOTIFICATION_SERVICE_URL) {
-         await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
-           appointmentId: appointment._id,
-           patientId,
-           doctorId,
-           date,
-           timeSlot,
-           doctorName,
-           patientName,
-           consultationFee
-         });
+        await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
+          appointmentId: appointment._id,
+          patientId,
+          doctorId,
+          date,
+          timeSlot,
+          doctorName,
+          patientName,
+          consultationFee
+        });
       }
     } catch (notifyErr) {
-       console.warn('Notification service failed or not implemented yet:', notifyErr.message);
+      console.warn('Notification service failed or not implemented yet:', notifyErr.message);
     }
+    */
 
     res.status(201).json({
       message: 'Appointment booked successfully', data: appointment
@@ -130,7 +131,7 @@ const getUserAppointments = async (req, res) => {
   try {
     const role = req.user.role;
     const userId = req.user.id;
-    
+
     let query = {};
     if (role === 'patient') {
       query.patientId = userId;
@@ -185,6 +186,8 @@ const getAvailableSlots = async (req, res) => {
   try {
     const { doctorId, date } = req.query;
 
+    console.log(doctorId, date);
+
     if (!doctorId || !date) {
       return res.status(400).json({ message: 'doctorId and date required' });
     }
@@ -214,7 +217,7 @@ const getAvailableSlots = async (req, res) => {
     const bookedSlots = appointments.map(a => a.timeSlot);
 
     const generateSlots = (start, end) => {
-      
+
       const slots = [];
       let current = new Date(`1970-01-01T${start}`);
 
@@ -223,7 +226,7 @@ const getAvailableSlots = async (req, res) => {
       while (current < endTime) {
         const next = new Date(current.getTime() + 30 * 60000);
 
-        const slotString = `${current.toTimeString().slice(0,5)} - ${next.toTimeString().slice(0,5)}`;
+        const slotString = `${current.toTimeString().slice(0, 5)} - ${next.toTimeString().slice(0, 5)}`;
 
         slots.push({
           time: slotString,
@@ -287,7 +290,7 @@ const cancelAppointment = async (req, res) => {
  * @access  Private
  */
 const updateAppointmentStatus = async (req, res) => {
-  
+
   try {
 
     const appointmentId = req.params.id;
@@ -313,30 +316,44 @@ const updateAppointmentStatus = async (req, res) => {
 
     await appointment.save();
 
-    // If marked as completed, trigger completion notification
-
-    if (status === 'completed') {
+    // TRIGGER NOTIFICATIONS
+    if (status === 'accepted') {
+      console.log(`\n\x1b[35m[APPOINTMENT SERVICE] Triggering ACCEPTANCE Notification for ID: ${appointment._id}\x1b[0m`);
       try {
         if (process.env.NOTIFICATION_SERVICE_URL) {
-           await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/completed`, {
-             appointmentId: appointment._id,
-             patientId: appointment.patientId,
-             doctorId: appointment.doctorId,
-             date: appointment.date,
-             timeSlot: appointment.timeSlot,
-             doctorName: appointment.doctorName,
-             patientName: appointment.patientName,
-           });
+          await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/accepted`, {
+            appointmentId: appointment._id,
+            patientId: appointment.patientId,
+            doctorId: appointment.doctorId,
+            date: appointment.date,
+            timeSlot: appointment.timeSlot,
+            doctorName: appointment.doctorName,
+            patientName: appointment.patientName
+          });
         }
       } catch (notifyErr) {
-         console.warn('Completed Notification failed/not implemented', notifyErr.message);
+        console.warn('Acceptance Notification failed:', notifyErr.message);
+      }
+    } else if (status === 'completed') {
+      console.log(`\n\x1b[35m[APPOINTMENT SERVICE] Triggering COMPLETION Notification for ID: ${appointment._id}\x1b[0m`);
+      try {
+        if (process.env.NOTIFICATION_SERVICE_URL) {
+          await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/completed`, {
+            appointmentId: appointment._id,
+            patientId: appointment.patientId,
+            doctorId: appointment.doctorId,
+            date: appointment.date,
+            timeSlot: appointment.timeSlot,
+            doctorName: appointment.doctorName,
+            patientName: appointment.patientName,
+          });
+        }
+      } catch (notifyErr) {
+        console.warn('Completed Notification failed', notifyErr.message);
       }
     }
 
-    res.status(200).json({
-      message: 'Appointment status updated successfully',
-      data: appointment
-    });
+    // Response
 
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
@@ -357,22 +374,25 @@ const markPaid = async (req, res) => {
     appointment.status = 'confirmed'; // automatically confirm when paid?
     await appointment.save();
 
+    console.log(`\n\x1b[35m[APPOINTMENT SERVICE] Triggering PAYMENT CONFIRMATION Notification for ID: ${appointment._id}\x1b[0m`);
+
     // Trigger Booking Notification via Notification Service
     try {
       if (process.env.NOTIFICATION_SERVICE_URL) {
-         await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
-           appointmentId: appointment._id,
-           patientId: appointment.patientId,
-           doctorId: appointment.doctorId,
-           date: appointment.date,
-           timeSlot: appointment.timeSlot,
-           doctorName: appointment.doctorName,
-           patientName: appointment.patientName,
-           consultationFee: appointment.consultationFee
-         });
+        await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
+          appointmentId: appointment._id,
+          patientId: appointment.patientId,
+          doctorId: appointment.doctorId,
+          date: appointment.date,
+          timeSlot: appointment.timeSlot,
+          doctorName: appointment.doctorName,
+          patientName: appointment.patientName,
+          consultationFee: appointment.consultationFee
+        });
       }
     } catch (notifyErr) {
-       console.warn('Booking Notification failed:', notifyErr.message);
+      console.warn('Booking Notification failed for Appt ID:', appointment._id);
+      console.warn('Reason:', notifyErr.response ? notifyErr.response.data : notifyErr.message);
     }
 
     res.status(200).json({ message: 'Appointment marked as paid', data: appointment });

@@ -131,7 +131,7 @@ export default function PaymentPage() {
                 </div>
             </header>
 
-            <main className="flex-1 pt-20 pb-4 px-6 max-w-5xl mx-auto w-full overflow-hidden flex flex-col justify-center">
+            <main className="flex-1 pt-24 pb-8 px-6 max-w-3xl mx-auto w-full overflow-hidden flex flex-col justify-center">
                 <div className="flex flex-col md:grid md:grid-cols-12 gap-8">
                     {/* Payment Form Side */}
                     <div className="md:col-span-12 lg:col-span-7 space-y-6">
@@ -203,54 +203,52 @@ export default function PaymentPage() {
 
                     {/* Order Summary Side */}
                     <div className="md:col-span-12 lg:col-span-5 space-y-4">
-                        <div className="bg-[#f3f4f5] p-6 rounded-3xl space-y-6 border border-[#c2c6d4]/10 shadow-sm">
-                            <h2 className="text-xl font-black tracking-tight text-[#191c1d] font-headline uppercase italic">Summary</h2>
+                        <div className="bg-white p-8 rounded-3xl space-y-6 border border-[#c2c6d4] shadow-sm">
+                            <h2 className="text-xl font-black tracking-tight text-[#191c1d] font-headline uppercase italic border-b border-[#c2c6d4]/30 pb-4">Payment Summary</h2>
                             
                             <div className="space-y-4">
-                                <div className="flex justify-between items-start gap-4">
-                                    <div>
-                                        <p className="font-black text-[#191c1d] text-sm">Specialist Consultation</p>
-                                        <p className="text-[10px] font-bold text-[#424752] opacity-70 mt-0.5 uppercase tracking-tight">
-                                            {appointment.doctorName}
-                                        </p>
+                                <div className="p-4 bg-[#f8f9fa] border border-[#c2c6d4]/40 rounded-xl">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#424752] opacity-60 mb-1">Medical Specialist</p>
+                                    <div className="flex justify-between items-center">
+                                        <p className="font-black text-[#191c1d] text-sm uppercase tracking-tight">{appointment.doctorName}</p>
+                                        <p className="font-bold text-[#007b7f] text-xs">Rs. {appointment.consultationFee.toFixed(2)}</p>
                                     </div>
-                                    <p className="font-black text-[#191c1d] text-sm">Rs.{appointment.consultationFee.toFixed(2)}</p>
                                 </div>
                                 
-                                <div className="flex justify-between items-center text-xs font-medium text-[#424752]">
-                                    <p>Admin Fee</p>
-                                    <p>Rs.{platformFee.toFixed(2)}</p>
+                                <div className="p-4 bg-[#f8f9fa] border border-[#c2c6d4]/40 rounded-xl">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#424752] opacity-60 mb-1">Administrative Fees</p>
+                                    <div className="flex justify-between items-center text-xs font-bold text-[#191c1d]">
+                                        <p className="uppercase tracking-tight">Processing & Service</p>
+                                        <p>Rs. {platformFee.toFixed(2)}</p>
+                                    </div>
                                 </div>
 
-                                <div className="h-px bg-[#c2c6d4]/30"></div>
-                                
-                                <div className="flex justify-between items-center pt-1">
-                                    <p className="text-sm font-black font-headline tracking-tight uppercase">Total</p>
-                                    <p className="text-2xl font-black text-[#007b7f] tracking-tighter">
-                                        Rs.{totalAmount.toFixed(2)}
-                                    </p>
+                                <div className="p-5 bg-[#006063] text-white rounded-2xl shadow-lg shadow-[#006063]/10">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-0.5">Total Settlement</p>
+                                            <p className="text-2xl font-black tracking-tighter">Rs.{totalAmount.toFixed(2)}</p>
+                                        </div>
+                                        <MdSecurity size={32} className="opacity-40" />
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Secure Status Indicator */}
-                            <div className="bg-[#e0f2f1] text-[#006063] px-4 py-3 rounded-2xl flex items-center gap-3">
-                                <MdSecurity size={24} className="shrink-0" />
-                                <div className="text-[9px] leading-tight font-black uppercase tracking-wider">
-                                    <p className="mb-0.5">Secure Checkout</p>
-                                    <p className="opacity-60 font-medium normal-case">256-bit AES encryption</p>
-                                </div>
+                            <div className="text-[9px] leading-tight font-black uppercase tracking-[0.2em] text-[#424752] opacity-40 text-center">
+                                Electronic Ledger Ready • HIPAA SECURE
                             </div>
                         </div>
 
                         {/* Bento Style Secondary Info */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-[#f3f4f5] p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 border border-[#c2c6d4]/10">
+                            <div className="bg-white p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 border border-[#c2c6d4]">
                                 <MdSchedule className="text-[#007b7f] text-2xl" />
                                 <p className="text-[9px] font-black uppercase tracking-widest text-[#424752] opacity-70 leading-tight">Instant Confirmation</p>
                             </div>
-                            <div className="bg-[#f3f4f5] p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 border border-[#c2c6d4]/10">
+                            <div className="bg-white p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 border border-[#c2c6d4]">
                                 <MdHistory className="text-[#007b7f] text-2xl" />
-                                <p className="text-[9px] font-black uppercase tracking-widest text-[#424752] opacity-70 leading-tight">Patient Support 24/7</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-[#424752] opacity-70 leading-tight">Clinical Support</p>
                             </div>
                         </div>
                     </div>
