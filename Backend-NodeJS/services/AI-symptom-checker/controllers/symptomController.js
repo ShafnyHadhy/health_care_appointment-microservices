@@ -18,17 +18,18 @@ Expected JSON Structure:
   "isEmergency": true | false,
   "matchScore": "85%",
   "possibleConditions": [
-    { "name": "Condition 1", "likelihood": "More Likely", "specialty": "Specialist" },
-    { "name": "Condition 2", "likelihood": "Possible", "specialty": "Specialist" },
-    { "name": "Condition 3", "likelihood": "Less Likely", "specialty": "Specialist" }
+    { "name": "Condition 1", "likelihood": "More Likely", "specialty": "Specialist" }
   ],
-  "recommendedSpecialty": "Primary Specialist",
-  "clinicalAdvice": "Advice string.",
-  "lifestyleAdvice": "Advice string.",
-  "recommendedAction": "Action string.",
+  "recommendedSpecialty": "SPECIALTY_NAME",
+  "clinicalAdvice": "Detailed guidance for the patient.",
+  "lifestyleAdvice": "Recovery and home care tips.",
+  "recommendedAction": "Actionable next steps.",
   "isAmbiguous": false,
   "followUpQuestions": []
 }
+
+CRITICAL: For "recommendedSpecialty", you MUST choose exactly ONE from this list of available departments in our hospital:
+[Cardiology, Dermatology, Gastroenterology, Neurology, Ophthalmology, Orthopedics, Pediatrics, Psychiatry, General Practitioner]
 `;
 
 // ─── Graceful Fallback (if Gemini is unavailable) ─────────────────────────────

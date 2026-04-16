@@ -20,6 +20,10 @@ const register = async (req, res) => {
         .json({ message: "User already exists in auth-service" });
     }
 
+    if (!refId) {
+      return res.status(400).json({ message: "refId is required for registration" });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -42,6 +46,7 @@ const register = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Auth Register Error:", error);
     res
       .status(500)
       .json({ message: "Server Error in auth-service", error: error.message });

@@ -182,14 +182,17 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const cfg = { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } };
-      const [dR, uR, aR, aiR] = await Promise.allSettled([
-        axios.get(`${API}/api/admin/users?type=doctor`, cfg),
-        axios.get(`${API}/api/admin/users?type=patient`, cfg),
+      const [uR, aR, aiR] = await Promise.allSettled([
+        axios.get(`${API}/api/admin/users`, cfg),
         axios.get(`${API}/api/admin/appointments`, cfg),
         axios.get(`${API}/api/admin/ai-reports`, cfg),
       ]);
-      if (dR.status==='fulfilled') setDoctors(dR.value.data?.data?.doctors || dR.value.data?.data || []);
-      if (uR.status==='fulfilled') setUsers(uR.value.data?.data?.patients || uR.value.data?.data || []);
+      
+      if (uR.status==='fulfilled') {
+        const userData = uR.value.data?.data;
+        setDoctors(userData?.doctors || []);
+        setUsers(userData?.patients || []);
+      }
       if (aR.status==='fulfilled') setAppointments(aR.value.data?.data || []);
       if (aiR.status==='fulfilled') setAiReports(aiR.value.data?.data || []);
     } catch(e) { console.error(e); }
@@ -253,7 +256,7 @@ export default function AdminPage() {
   const filtAppts = useMemo(() => {
     let a = [...appointments];
     if (apptFilter!=='all') a = a.filter(x => (x.status||'').toLowerCase()===apptFilter);
-    if (search) a = a.filter(x => `${x.patientName||''} ${x.doctorName||''} ${x.status||''}`.toLowerCase().includes(search.toLowerCase()));
+    if (search) a = a.filter(x => `${x.patientName||x.patient||''} ${x.doctorName||x.doctor||''} ${x.status||''}`.toLowerCase().includes(search.toLowerCase()));
     return a;
   }, [appointments, apptFilter, search]);
 
@@ -408,7 +411,7 @@ export default function AdminPage() {
           <Table cols={['Provider','Expertise','Status']} rows={doctors.slice(0,6).map((d,i) => (
             <TR key={d._id||i} i={i}>
               <TD><div style={{ display:'flex', alignItems:'center', gap:12 }}><Avatar name={d.name||d.fullName}/>{d.name||d.fullName||'N/A'}</div></TD>
-              <TD sub>{d.specialization||d.specialy||'General Pract.'}</TD>
+              <TD sub>{d.specialization || d.specialty || 'General Pract.'}</TD>
               <TD><Badge label={d.isVerified?'Verified':d.isRejected?'Rejected':'Pending'} color={statusCol(d.isVerified?'verified':d.isRejected?'rejected':'pending')}/></TD>
             </TR>
           ))} empty="No healthcare providers registered."/>
@@ -508,7 +511,7 @@ export default function AdminPage() {
           <TD>{a.patientName||a.patient||'N/A'}</TD>
           <TD sub>{a.doctorName||a.doctor||'—'}</TD>
           <TD sub>{fmtDate(a.date||a.appointmentDate)}</TD>
-          <TD sub>{a.time||a.timeSlot||'—'}</TD>
+          <TD sub>{a.timeSlot||a.time||'—'}</TD>
           <TD><Badge label={a.status||'Pending'} color={statusCol(a.status)}/></TD>
         </TR>
       ))} empty="No clinical appointments found in this window."/>

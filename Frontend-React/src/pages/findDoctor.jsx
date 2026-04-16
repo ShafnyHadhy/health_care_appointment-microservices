@@ -200,14 +200,12 @@ export default function FindDoctor() {
                   </div>
 
                   <div className="mt-3.5 flex gap-2">
-                    <button className="flex-1 py-1.5 px-2 rounded-md font-semibold text-[11px] border border-primary bg-white text-gray-600 hover:text-gray-800 hover:bg-gray-200 transition-colors uppercase tracking-wide">
-                      Profile
-                    </button>
                     <button 
                       onClick={() => handleBookClick(doc)}
-                      className="flex-[1.5] py-1.5 px-2 rounded-md font-semibold text-[11px] bg-primary/80 hover:bg-primary text-white active:scale-95 transition-all uppercase tracking-wide border border-primary"
+                      className="grow py-2 px-4 rounded-xl font-headline font-bold text-sm bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
-                      Book Now
+                      <Calendar size={16} />
+                      Book Consultation
                     </button>
                   </div>
                 </div>

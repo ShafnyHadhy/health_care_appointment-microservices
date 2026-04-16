@@ -149,15 +149,33 @@ export default function SymptomChecker() {
     const fetchDoctors = async (targetSpecialty) => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const { data } = await axios.get(`${apiUrl}/api/doctors`);
-            if (data?.data) {
-                const filtered = data.data.filter(d =>
-                    d.specialization && d.specialization.toLowerCase().includes(targetSpecialty.toLowerCase())
-                );
-                setDoctors(filtered.length > 0 ? filtered : data.data);
+            // Use appDoc endpoint as it might return all doctors for AI matching
+            const response = await axios.get(`${apiUrl}/api/doctors/appDoc`);
+            
+            if (response.data && response.data.data) {
+                const allDoctors = response.data.data;
+                
+                // Advanced fuzzy matching for specialties
+                const filtered = allDoctors.filter(d => {
+                    const spec = (d.specialty || d.specialization || '').toLowerCase();
+                    const target = targetSpecialty.toLowerCase();
+                    // Match if target is in specialty (e.g. "Neurology" matches "Neurologist") OR vice-versa
+                    return spec.includes(target) || target.includes(spec);
+                });
+                
+                if (filtered.length === 0) {
+                    // Fallback to General Practitioners if no specialist is found
+                    const gps = allDoctors.filter(d => 
+                        (d.specialty || d.specialization || '').toLowerCase().includes('general')
+                    );
+                    setDoctors(gps.length > 0 ? gps : allDoctors.slice(0, 4));
+                } else {
+                    setDoctors(filtered);
+                }
             }
         } catch (err) {
             console.error('Failed to fetch doctors:', err);
+            toast.error('Could not load recommended specialists.');
         }
     };
 
@@ -168,12 +186,41 @@ export default function SymptomChecker() {
 
     const confirmBooking = async () => {
         if (!selectedDate || !selectedTime) { toast.error('Please select both date and time.'); return; }
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            toast.error('Please login as a patient to book an appointment.');
+            return;
+        }
+
         setIsBooking(true);
-        setTimeout(() => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const bookingData = {
+                doctorId: selectedDoctor._id,
+                date: selectedDate,
+                timeSlot: selectedTime,
+                reason: `AI-Powered Symptom Analysis: ${aiResult?.possibleConditions?.[0]?.name || 'Routine Checkup'}`
+            };
+
+            const response = await axios.post(`${apiUrl}/api/appointments/book`, bookingData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data) {
+                toast.success('Appointment Booked Successfully!');
+                // Wait a moment so toast is visible
+                setTimeout(() => {
+                    navigate('/patient-dashboard');
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Booking Error:', error);
+            const errorMsg = error.response?.data?.message || 'Failed to book appointment. Please try again.';
+            toast.error(errorMsg);
+        } finally {
             setIsBooking(false);
-            toast.success('Appointment Booked Successfully!');
-            navigate('/patient-dashboard');
-        }, 1500);
+        }
     };
 
     const downloadDossier = () => {
@@ -723,7 +770,7 @@ export default function SymptomChecker() {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-headline font-bold text-gray-900 group-hover:text-primary transition-colors">{doc.name || `${doc.firstName} ${doc.lastName}`}</h4>
-                                                    <p className="font-label text-xs font-semibold text-gray-400 uppercase tracking-widest">{doc.specialization || 'Clinical Expert'}</p>
+                                                    <p className="font-label text-xs font-semibold text-gray-400 uppercase tracking-widest">{doc.specialty || doc.specialization || 'Clinical Expert'}</p>
                                                 </div>
                                             </div>
                                             <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
@@ -816,7 +863,7 @@ export default function SymptomChecker() {
                                             <div>
                                                 <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Doctor</p>
                                                 <p className="font-headline font-bold text-white text-base leading-tight">{selectedDoctor.name || selectedDoctor.firstName}</p>
-                                                <p className="font-label text-xs font-semibold mt-0.5" style={{ color: '#00B2A9' }}>{selectedDoctor.specialization}</p>
+                                                <p className="font-label text-xs font-semibold mt-0.5" style={{ color: '#00B2A9' }}>{selectedDoctor.specialty || selectedDoctor.specialization}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-4">

@@ -41,7 +41,12 @@ const saveAiReport = async (req, res) => {
 // @access  Private/Admin
 const getAiReports = async (req, res) => {
     try {
-        const reports = await AiReport.find().sort({ createdAt: -1 });
+        const { email, name } = req.query;
+        let query = {};
+        if (email) query.patientEmail = email;
+        if (name) query.patientName = new RegExp(name, 'i');
+        
+        const reports = await AiReport.find(query).sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: reports.length, data: reports });
     } catch (error) {
         console.error('[AI REPORT GET ERROR]', error.message);
