@@ -22,14 +22,25 @@ if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {
 // Helper to send SMS
 const sendSMS = async (to, message) => {
   if (!twilioClient || !process.env.TWILIO_PHONE || !to) return;
+  
+  // Format number for Twilio (Ensure E.164 format)
+  // Assuming Sri Lanka (+94) if it starts with 0 or has 9 digits
+  let formattedTo = to.trim();
+  if (formattedTo.startsWith('0')) {
+    formattedTo = '+94' + formattedTo.substring(1);
+  } else if (!formattedTo.startsWith('+')) {
+    formattedTo = '+94' + formattedTo;
+  }
+
   try {
     await twilioClient.messages.create({
       body: message,
       from: process.env.TWILIO_PHONE,
-      to,
+      to: formattedTo,
     });
+    console.log(`✅ SMS sent successfully to ${formattedTo}`);
   } catch (err) {
-    console.warn(`Failed to send SMS to ${to}:`, err.message);
+    console.warn(`❌ Failed to send SMS to ${formattedTo}:`, err.message);
   }
 };
 
@@ -53,11 +64,11 @@ const getDetails = async (patientId, doctorId) => {
       config
     );
 
-    const patientList = Array.isArray(pRes.data) ? pRes.data : (pRes.data.data || []);
-    const doctorList = Array.isArray(dRes.data) ? dRes.data : (dRes.data.data || []);
+    const patientList = Array.isArray(pRes.data) ? pRes.data : (pRes.data?.data || []);
+    const doctorList = Array.isArray(dRes.data) ? dRes.data : (dRes.data?.data || []);
 
-    const patient = patientList.find((p) => p._id === patientId);
-    const doctor = doctorList.find((d) => d._id === doctorId);
+    const patient = patientList.find((p) => String(p._id) === String(patientId));
+    const doctor = doctorList.find((d) => String(d._id) === String(doctorId));
 
     return { patient, doctor };
   } catch (err) {
