@@ -4,7 +4,6 @@ const axios = require('axios');
 
 // Helper: Configure Axios requests with Admin JWT
 const getAxiosConfig = (req) => {
-    // Pass the admin's token along to other services if their endpoints are protected
     const token = req.headers.authorization;
     return {
         headers: {
@@ -12,6 +11,11 @@ const getAxiosConfig = (req) => {
         },
     };
 };
+
+const PATIENT_SERVICE = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
+const DOCTOR_SERVICE = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
+const APPOINTMENT_SERVICE = process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003';
+const AUTH_SERVICE = process.env.AUTH_SERVICE_URL || 'http://localhost:3008';
 
 /**
  * @desc    Register Admin
@@ -36,7 +40,7 @@ const registerAdmin = async (req, res) => {
 
         if (admin) {
             try {
-                await axios.post('http://localhost:3008/api/auth/register', {
+                await axios.post(`${AUTH_SERVICE}/api/auth/register`, {
                     email: admin.email,
                     password: req.body.password,
                     role: 'admin',
@@ -69,7 +73,24 @@ const registerAdmin = async (req, res) => {
  * @access  Private/Admin
  */
 const getAllUsers = async (req, res) => {
-    
+    try {
+        const config = getAxiosConfig(req);
+        const [patientsRes, doctorsRes] = await Promise.allSettled([
+            axios.get(`${PATIENT_SERVICE}/api/patients`, config),
+            axios.get(`${DOCTOR_SERVICE}/api/doctors`, config)
+        ]);
+
+        const patients = patientsRes.status === 'fulfilled' ? patientsRes.value.data.data.map(p => ({ ...p, userType: 'patient' })) : [];
+        const doctors = doctorsRes.status === 'fulfilled' ? doctorsRes.value.data.data.map(d => ({ ...d, userType: 'doctor' })) : [];
+
+        res.status(200).json({
+            message: 'Users fetched successfully',
+            data: { patients, doctors, all: [...patients, ...doctors] }
+        });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+    }
 };
 
 /**
@@ -78,7 +99,18 @@ const getAllUsers = async (req, res) => {
  * @access  Private/Admin
  */
 const getAllAppointments = async (req, res) => {
-    
+    try {
+        const config = getAxiosConfig(req);
+        const response = await axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config);
+
+        res.status(200).json({
+            message: 'Appointments fetched successfully',
+            data: response.data.data
+        });
+    } catch (error) {
+        console.error('Error fetching appointments:', error);
+        res.status(500).json({ message: 'Failed to fetch appointments', error: error.message });
+    }
 };
 
 /**
@@ -118,23 +150,56 @@ const getDashboardCounts = async (req, res) => {
         // We can reuse the routes from above locally or call the other services again
         // For simplicity, we just make the parallel calls to other services again here
         const [patientsRes, doctorsRes, appointmentsRes] = await Promise.allSettled([
-            axios.get(`${process.env.PATIENT_SERVICE_URL}/api/patients`, config),
-            axios.get(`${process.env.DOCTOR_SERVICE_URL}/api/doctors`, config),
-            axios.get(`${process.env.APPOINTMENT_SERVICE_URL}/api/appointments`, config)
+            axios.get(`${PATIENT_SERVICE}/api/patients`, config),
+            axios.get(`${DOCTOR_SERVICE}/api/doctors`, config),
+            axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config)
         ]);
 
         const patients = patientsRes.status === 'fulfilled' ? patientsRes.value.data.data : [];
         const doctors = doctorsRes.status === 'fulfilled' ? doctorsRes.value.data.data : [];
         const appointments = appointmentsRes.status === 'fulfilled' ? appointmentsRes.value.data.data : [];
 
-        // Calculate revenue (sum of consultationFee for paid/completed appointments)
-        let totalRevenue = 0;
-        appointments.forEach(appt => {
-            // Depending on exact schema. assuming isPaid or status === 'completed'
-            if (appt.isPaid || appt.status === 'completed') {
-                totalRevenue += (appt.consultationFee || 0);
-            }
+        // --- Analytics Calculations ---
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return d.toISOString().split('T')[0];
+        }).reverse();
+
+        // 1. Registrations over last 7 days
+        const registrationsByDate = last7Days.map(date => {
+            const count = [...patients, ...doctors].filter(u => {
+                const uDate = u.createdAt ? u.createdAt.split('T')[0] : null;
+                return uDate === date;
+            }).length;
+            return count;
         });
+
+        // 2. Revenue over last 7 days
+        let totalRevenue = 0;
+        const revenueByDate = last7Days.map(date => {
+            let dailyRev = 0;
+            appointments.forEach(appt => {
+                const apptDate = appt.appointmentDate ? appt.appointmentDate.split('T')[0] : null;
+                if (apptDate === date && (appt.isPaid || appt.status === 'completed')) {
+                    const fee = appt.consultationFee || 0;
+                    dailyRev += fee;
+                }
+                // Aggregate for total
+                if (appt.isPaid || appt.status === 'completed') {
+                    totalRevenue += (appt.consultationFee || 0);
+                }
+            });
+            return dailyRev;
+        });
+
+        // 3. Appointments by Specialty
+        const specialtyMap = {};
+        appointments.forEach(appt => {
+            const spec = appt.specialization || 'General';
+            specialtyMap[spec] = (specialtyMap[spec] || 0) + 1;
+        });
+        const appointmentsBySpecialty = Object.entries(specialtyMap).map(([name, count]) => ({ name, count }));
 
         res.status(200).json({
             message: 'Dashboard data fetched',
@@ -142,7 +207,13 @@ const getDashboardCounts = async (req, res) => {
                 totalPatients: patients.length,
                 totalDoctors: doctors.length,
                 totalAppointments: appointments.length,
-                totalRevenue
+                totalRevenue: appointments.reduce((sum, a) => sum + (a.isPaid ? a.consultationFee : 0), 0),
+                analytics: {
+                    registrationsByDate,
+                    revenueByDate,
+                    appointmentsBySpecialty,
+                    labels: last7Days.map(d => d.split('-').slice(1).join('/')) // MM/DD
+                }
             }
         });
 
@@ -152,10 +223,85 @@ const getDashboardCounts = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Delete a user
+ * @route   DELETE /api/admin/users/:type/:id
+ * @access  Private/Admin
+ */
+const deleteUser = async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        const config = getAxiosConfig(req);
+        
+        if (type === 'patient') {
+            await axios.delete(`${PATIENT_SERVICE}/api/patients/${id}`, config);
+        } else if (type === 'doctor') {
+            await axios.delete(`${DOCTOR_SERVICE}/api/doctors/${id}`, config);
+        } else {
+            return res.status(400).json({ message: 'Invalid user type' });
+        }
+
+        res.status(200).json({ message: `${type} deleted successfully.` });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        const msg = error.response ? error.response.data.message : error.message;
+        res.status(500).json({ message: 'Failed to delete user', error: msg });
+    }
+};
+
+/**
+ * @desc    Update a user
+ * @route   PUT /api/admin/users/:type/:id
+ * @access  Private/Admin
+ */
+const updateUser = async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        const config = getAxiosConfig(req);
+        
+        if (type === 'patient') {
+            await axios.put(`${PATIENT_SERVICE}/api/patients/${id}`, req.body, config);
+        } else if (type === 'doctor') {
+            await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}`, req.body, config);
+        } else {
+            return res.status(400).json({ message: 'Invalid user type' });
+        }
+
+        res.status(200).json({ message: `${type} updated successfully.` });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        const msg = error.response ? error.response.data.message : error.message;
+        res.status(500).json({ message: 'Failed to update user', error: msg });
+    }
+};
+
+/**
+ * @desc    Reject a doctor
+ * @route   PUT /api/admin/doctors/reject/:id
+ * @access  Private/Admin
+ */
+const rejectDoctor = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const config = getAxiosConfig(req);
+        
+        // Send rejection status to Doctor service
+        await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}`, { isVerified: false, status: 'rejected' }, config);
+
+        res.status(200).json({ message: 'Doctor application rejected successfully' });
+    } catch (error) {
+        console.error('Error rejecting doctor:', error);
+        res.status(500).json({ message: 'Failed to reject doctor', error: error.message });
+    }
+};
+
 module.exports = {
     registerAdmin,
     getAllUsers,
     getAllAppointments,
     verifyDoctor,
-    getDashboardCounts
+    getDashboardCounts,
+    deleteUser,
+    updateUser,
+    rejectDoctor
 };

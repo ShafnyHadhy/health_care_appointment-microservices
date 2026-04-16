@@ -95,17 +95,17 @@ export default function HomeBody() {
               </div>
             </div>
 
-            <div style={tealPulse} className="md:col-span-4 text-white rounded-lg p-6 md:p-8 flex flex-col justify-between shadow-md">
+            <Link to="/symptom-checker" style={tealPulse} className="md:col-span-4 text-white rounded-lg p-6 md:p-8 flex flex-col justify-between shadow-md hover:scale-[1.02] transition-transform active:scale-95 cursor-pointer">
               <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-md flex items-center justify-center mb-4 md:mb-6">
                 <MdPsychology className="text-2xl md:text-3xl text-white" />
               </div>
               <div>
                 <h3 className="font-headline font-bold text-xl md:text-2xl mb-2 md:mb-3">AI Symptom Checker</h3>
                 <span className="inline-flex items-center gap-1.5 md:gap-2 text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 md:px-4 md:py-2 rounded-md mt-2 border border-white/10">
-                  BETA Access <MdBolt className="text-sm md:text-base" />
+                  Try AI Analysis <MdBolt className="text-sm md:text-base" />
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>

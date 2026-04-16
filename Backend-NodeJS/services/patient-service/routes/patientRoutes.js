@@ -1,31 +1,58 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const upload = require('../middleware/upload');
-const { protect, authorize } = require('../middleware/auth');
+const upload = require("../middleware/upload");
+const { protect, authorize } = require("../middleware/auth");
 const {
-    registerPatient,
-    getPatientProfile,
-    updatePatientProfile,
-    getAllPatients,
-    uploadReport,
-    getReports,
-    deleteReport,
-    getMyPrescriptions
-} = require('../controllers/patientController');
+  registerPatient,
+  getPatientProfile,
+  updatePatientProfile,
+  getAllPatients,
+  getPatientById,
+  uploadReport,
+  getReports,
+  deleteReport,
+  getMyPrescriptions,
+  updatePatient,
+  deletePatient,
+  getPatientMedicalReportsByDoctor,
+} = require("../controllers/patientController");
 
-// Public routes
-router.post('/register', registerPatient);
-router.get('/', getAllPatients); // Typically protected for admin only, public/admin here
+// PUBLIC
+router.post("/register", registerPatient);
 
-// Protected routes (Patient Profile)
-router.get('/profile', protect, getPatientProfile);
-router.put('/profile', protect, updatePatientProfile);
-router.get('/prescriptions', protect, authorize('patient'), getMyPrescriptions);
+// PATIENT OWN ROUTES - static first
+router.get("/profile", protect, authorize("patient"), getPatientProfile);
+router.put("/profile", protect, authorize("patient"), updatePatientProfile);
 
-// Protected routes (Medical Reports)
-// We specifically only let the 'patient' upload to their own record here
-router.post('/reports/upload', protect, authorize('patient'), upload.single('report'), uploadReport);
-router.get('/reports', protect, authorize('patient'), getReports);
-router.delete('/reports/:filename', protect, authorize('patient'), deleteReport);
+router.get("/prescriptions", protect, authorize("patient"), getMyPrescriptions);
+
+router.post(
+  "/reports/upload",
+  protect,
+  authorize("patient"),
+  upload.single("report"),
+  uploadReport,
+);
+router.get("/reports", protect, authorize("patient"), getReports);
+router.delete(
+  "/reports/:filename",
+  protect,
+  authorize("patient"),
+  deleteReport,
+);
+
+// DOCTOR ROUTES
+router.get(
+  "/patients/:patientId/medical-reports",
+  protect,
+  authorize("doctor"),
+  getPatientMedicalReportsByDoctor,
+);
+
+// ADMIN ROUTES - dynamic later
+router.get("/", protect, authorize("admin", "doctor"), getAllPatients);
+router.get("/:id", protect, authorize("admin"), getPatientById);
+router.put("/:id", protect, authorize("admin"), updatePatient);
+router.delete("/:id", protect, authorize("admin"), deletePatient);
 
 module.exports = router;
