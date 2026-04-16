@@ -1,13 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-    MdPayments, MdSearch, MdFilterList, 
-    MdDownload, MdTrendingUp, MdSecurity,
-    MdRotateRight, MdArrowBack
-} from 'react-icons/md';
-import Header from '../../components/header';
-import Footer from '../../components/footer';
 import { generateReceiptPDF } from '../../utils/receiptGenerator';
 import toast from 'react-hot-toast';
 
@@ -17,8 +10,22 @@ export default function PaymentHistory() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [downloadingId, setDownloadingId] = useState(null);
+    const [patientData, setPatientData] = useState(null);
 
     useEffect(() => {
+        const fetchPatientProfile = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/patients/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                setPatientData(response.data);
+            } catch (error) {
+                console.error('Error fetching patient profile:', error);
+            }
+        };
+
         const fetchPayments = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/payment`, {
@@ -34,6 +41,7 @@ export default function PaymentHistory() {
                 setLoading(false);
             }
         };
+        fetchPatientProfile();
         fetchPayments();
     }, []);
 
@@ -73,143 +81,145 @@ export default function PaymentHistory() {
     );
 
     return (
-        <div className="bg-[#fcfdfd] text-[#191c1d] min-h-screen font-body selection:bg-teal-100 flex flex-col">
-            <Header />
-
-            <main className="flex-1 p-4 md:p-10 max-w-7xl mx-auto w-full">
-                {/* Back Button & Title */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                    <div>
-                        <button 
-                            onClick={() => navigate('/patient-dashboard')}
-                            className="flex items-center gap-2 text-teal-600 font-bold text-xs uppercase tracking-widest hover:gap-3 transition-all mb-4 group"
-                        >
-                            <MdArrowBack size={18} className="group-hover:-translate-x-1 transition-transform" />
-                            Back to Dashboard
-                        </button>
-                        <h1 className="text-5xl font-black tracking-tight text-[#191c1d] font-headline uppercase italic leading-none">
-                            Payment <span className="text-teal-600">History.</span>
-                        </h1>
-                        <p className="text-slate-500 text-sm font-medium mt-3 max-w-xl leading-relaxed italic">
-                            Secure access to your medical financial records. All billing and transaction data is end-to-end encrypted.
-                        </p>
+        <div className="bg-background-custom text-on-surface min-h-screen font-body selection:bg-primary-fixed/30 py-12 px-6">
+            <main className="max-w-4xl mx-auto w-full">
+                {/* Independent Header with Navigation */}
+                <div className="flex justify-between items-center mb-12">
+                    <div 
+                        onClick={() => navigate('/patient-dashboard')}
+                        className="flex items-center gap-3 cursor-pointer group"
+                    >
+                        <div className="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-on-surface-variant group-hover:bg-primary-custom group-hover:text-on-primary transition-all duration-300">
+                            <span className="material-symbols-outlined text-xl">arrow_back</span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant group-hover:text-primary-custom transition-colors">Back to Portal</span>
                     </div>
 
-                    {/* Quick Stats Bento */}
-                    <div className="flex gap-4">
-                        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex flex-col items-center justify-center min-w-[140px] text-center">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Success Rate</span>
-                            <span className="text-3xl font-black text-teal-600 leading-none">{successRate.toFixed(0)}%</span>
-                        </div>
-                        <div className="bg-[#006063] p-6 rounded-3xl shadow-xl shadow-[#006063]/20 flex flex-col items-center justify-center min-w-[140px] text-center text-white">
-                            <span className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Payments</span>
-                            <span className="text-3xl font-black leading-none">{payments.length}</span>
-                        </div>
+                    <div className="text-right">
+                        <div className="text-xl font-black tracking-tighter text-primary-custom uppercase italic">The Sanctuary.</div>
+                        <div className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest opacity-40">Financial Audit Vault</div>
                     </div>
                 </div>
 
-                {/* Total Balance Hero */}
-                <div className="bg-white p-10 rounded-[40px] shadow-2xl shadow-teal-900/5 mb-12 relative overflow-hidden group border border-slate-100">
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-8">
-                        <div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-4">Cumulative Healthcare Spending</span>
-                            <div className="text-7xl font-black text-[#006063] tracking-tighter flex items-start gap-1">
-                                <span className="text-3xl mt-2">Rs.</span>
+                {/* Page Title */}
+                <header className="mb-12">
+                    <h1 className="text-5xl font-extrabold tracking-tight text-on-surface mb-3 font-headline uppercase italic leading-none">
+                        Payment <span className="text-primary-custom">History.</span>
+                    </h1>
+                    <p className="text-on-surface-variant text-sm font-medium leading-relaxed italic opacity-70">
+                        Official medical financial records. This archive contains all settled consultations and ledger entries for your account.
+                    </p>
+                </header>
+
+                {/* Summary Bento Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div className="col-span-1 md:col-span-2 bg-surface-container-lowest p-8 rounded-[32px] shadow-sm border border-outline-variant/10 flex flex-col justify-between relative overflow-hidden group">
+                        <div className="relative z-10">
+                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Total Lifetime Spending</span>
+                            <div className="text-6xl font-black text-primary-custom mt-2 tracking-tighter">
+                                <span className="text-2xl mr-1 opacity-50 font-normal">Rs.</span>
                                 {totalSpent.toLocaleString()}
                             </div>
-                            <div className="mt-6 flex items-center gap-2">
-                                <div className="bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1.5 uppercase tracking-wider border border-teal-100/50">
-                                    <MdTrendingUp size={14} />
-                                    Investment in Health
-                                </div>
+                        </div>
+                        <div className="mt-8 flex gap-4 relative z-10">
+                            <div className="bg-primary-fixed text-on-primary-fixed-variant px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-1.5 uppercase border border-primary-fixed-variant/10">
+                                <span className="material-symbols-outlined text-xs">verified</span>
+                                Secure Transaction Log
                             </div>
                         </div>
-                        
-                        <div className="hidden lg:block w-full max-w-xs space-y-4">
-                           <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic">
-                                "The greatest wealth is health." This total includes all consultation fees, medical reports, and specialist referrals processed through our secure gateway.
-                           </p>
+                        <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-primary-custom/5 rounded-full blur-3xl group-hover:bg-primary-custom/10 transition-colors"></div>
+                    </div>
+
+                    <div className="bg-surface-container-low p-8 rounded-[32px] flex flex-col justify-center border border-outline-variant/10">
+                        <div className="text-on-surface-variant font-black text-[10px] uppercase tracking-widest mb-4 opacity-50">Audit Entries</div>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-6xl font-black text-on-surface tracking-tighter">{payments.length}</span>
+                            <span className="text-on-surface-variant font-black text-[10px] uppercase tracking-widest opacity-40">Records</span>
+                        </div>
+                        <div className="mt-6 w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+                            <div className="bg-primary-custom h-full transition-all duration-1000 shadow-lg" style={{ width: `${successRate}%` }}></div>
                         </div>
                     </div>
-                    {/* Abstract background decorations */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-[100px] opacity-50 -mr-20 -mt-20"></div>
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-50 rounded-full blur-[60px] opacity-30 -ml-10 -mb-10"></div>
                 </div>
 
-                {/* Data Section */}
-                <section className="bg-white rounded-[40px] shadow-xl shadow-slate-200/50 border border-slate-200 flex flex-col overflow-hidden">
-                    <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100">
-                        <div className="relative flex-1 max-w-lg">
-                            <MdSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={24} />
+                {/* Transactions Section */}
+                <section className="bg-surface-container-lowest rounded-[32px] shadow-xl shadow-surface-container-low/50 border border-outline-variant/10 overflow-hidden">
+                    {/* Filter Bar */}
+                    <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant/10">
+                        <div className="relative flex-1 max-w-md">
+                            <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
                             <input 
-                                className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-3xl text-sm font-semibold focus:ring-4 focus:ring-teal-500/10 transition-all outline-none placeholder:text-slate-300" 
-                                placeholder="Search transactions by ID, status or amount..." 
+                                className="w-full pl-14 pr-6 py-4 bg-surface-container-low border-none rounded-2xl text-sm font-semibold focus:ring-4 focus:ring-primary-custom/10 transition-all outline-none placeholder:text-on-surface-variant/40" 
+                                placeholder="Search archives..." 
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <div className="flex bg-slate-50 p-1.5 rounded-3xl gap-1 border border-slate-100">
-                            <button className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-white text-teal-600 shadow-sm border border-slate-200/50">Records</button>
-                            <button className="px-3 py-2.5 rounded-2xl text-slate-400 hover:text-teal-600 transition-colors"><MdFilterList size={22} /></button>
+                        <div className="flex gap-2">
+                            <button className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-primary-custom text-on-primary shadow-lg shadow-primary-custom/20">All Time</button>
+                            <button className="px-4 py-3 rounded-2xl text-[10px] font-black uppercase bg-surface-container-low text-on-surface-variant hover:bg-surface-container transition-all">
+                                <span className="material-symbols-outlined text-[18px]">filter_list</span>
+                            </button>
                         </div>
                     </div>
 
+                    {/* Table Content */}
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction Date</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Appointment Identity</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Fee (LKR)</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Settlement</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Receipt</th>
+                                <tr className="bg-surface-container-low/50">
+                                    <th className="px-10 py-6 text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Settlement Date</th>
+                                    <th className="px-10 py-6 text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Session Reference</th>
+                                    <th className="px-10 py-6 text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] text-right">Fee (LKR)</th>
+                                    <th className="px-10 py-6 text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Integrity</th>
+                                    <th className="px-10 py-6 text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] text-center">Receipt</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-outline-variant/10">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="5" className="px-8 py-20 text-center text-sm text-slate-400 font-bold animate-pulse uppercase tracking-widest">Synchronizing secure records...</td>
+                                        <td colSpan="5" className="px-10 py-24 text-center text-[10px] text-on-surface-variant font-black uppercase tracking-[0.4em] animate-pulse">Decrypting Financial Archive...</td>
                                     </tr>
                                 ) : filteredPayments.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="px-8 py-20 text-center text-sm text-slate-400 font-bold uppercase tracking-widest">No matching logs discovered</td>
+                                        <td colSpan="5" className="px-10 py-24 text-center text-[10px] text-on-surface-variant font-black uppercase tracking-[0.2em]">No valid logs discovered in archive</td>
                                     </tr>
                                 ) : filteredPayments.map((payment) => (
-                                    <tr key={payment._id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-8 py-7">
-                                            <div className="text-xs font-bold text-slate-900">{new Date(payment.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                                            <div className="text-[9px] text-slate-400 font-black uppercase tracking-tighter mt-1">{new Date(payment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    <tr key={payment._id} className="hover:bg-surface-container-low/50 transition-colors group px-4">
+                                        <td className="px-10 py-8">
+                                            <div className="text-xs font-black text-on-surface uppercase tracking-tight">{new Date(payment.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                                            <div className="text-[9px] text-on-surface-variant font-bold opacity-40 uppercase mt-1">{new Date(payment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                         </td>
-                                        <td className="px-8 py-7">
-                                            <div className="text-xs font-black text-slate-900">REF-{payment.appointmentId.slice(-8).toUpperCase()}</div>
-                                            <div className="text-[9px] text-teal-600 font-black uppercase tracking-widest mt-0.5">Validated Transaction</div>
+                                        <td className="px-10 py-8">
+                                            <div className="text-[11px] font-black text-on-surface tracking-tighter">APP-{payment.appointmentId.slice(-8).toUpperCase()}</div>
+                                            <div className="text-[9px] text-primary-custom font-black uppercase tracking-widest mt-1 opacity-60">Verified Settlement</div>
                                         </td>
-                                        <td className="px-8 py-7 text-sm font-black text-[#006063] text-right">Rs. {payment.amount.toFixed(2)}</td>
-                                        <td className="px-8 py-7">
-                                            <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border ${
-                                                payment.status === 'completed' ? 'bg-teal-50 text-teal-700 border-teal-100' :
-                                                payment.status === 'pending' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                                'bg-rose-50 text-rose-700 border-rose-100'
+                                        <td className="px-10 py-8 text-sm font-black text-primary-custom text-right">Rs. {payment.amount.toFixed(2)}</td>
+                                        <td className="px-10 py-8">
+                                            <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                                payment.status === 'completed' ? 'bg-emerald-50 text-emerald-800 border-emerald-100' :
+                                                payment.status === 'pending' ? 'bg-blue-50 text-blue-800 border-blue-100' :
+                                                'bg-rose-50 text-rose-800 border-rose-100'
                                             }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full mr-2.5 ${
-                                                    payment.status === 'completed' ? 'bg-teal-600' :
-                                                    payment.status === 'pending' ? 'bg-orange-500' :
-                                                    'bg-rose-500'
+                                                <span className={`w-2 h-2 rounded-full mr-2.5 ${
+                                                    payment.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                                                    payment.status === 'pending' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
+                                                    'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
                                                 }`}></span>
                                                 {payment.status}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-7 text-center">
+                                        <td className="px-10 py-8 text-center">
                                             <button 
-                                               onClick={() => handleDownloadReceipt(payment)}
-                                               disabled={downloadingId === payment._id}
-                                               className="bg-white border border-slate-200 text-slate-800 hover:bg-teal-600 hover:text-white hover:border-teal-600 p-3 rounded-2xl disabled:opacity-30 transition-all shadow-sm active:scale-90 inline-flex items-center justify-center group"
+                                                onClick={() => handleDownloadReceipt(payment)}
+                                                disabled={downloadingId === payment._id}
+                                                className="bg-white border border-outline-variant text-on-surface-variant hover:bg-primary-custom hover:text-on-primary hover:border-primary-custom p-3 rounded-2xl disabled:opacity-30 transition-all shadow-sm active:scale-95 inline-flex items-center justify-center group/btn"
                                             >
                                                 {downloadingId === payment._id ? (
-                                                    <MdRotateRight className="animate-spin" size={20} />
+                                                    <span className="material-symbols-outlined animate-spin text-[20px]">rotate_right</span>
                                                 ) : (
-                                                    <MdDownload size={20} className="group-hover:-translate-y-0.5 transition-transform" />
+                                                    <span className="material-symbols-outlined text-[20px] group-hover/btn:-translate-y-1 transition-transform">download_2</span>
                                                 )}
                                             </button>
                                         </td>
@@ -220,20 +230,24 @@ export default function PaymentHistory() {
                     </div>
                 </section>
 
-                <div className="mt-12 p-8 bg-slate-900 text-white rounded-[40px] flex flex-col md:flex-row items-center gap-8 border border-slate-800 shadow-2xl">
-                    <div className="w-16 h-16 rounded-[24px] bg-teal-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-teal-500/30">
-                        <MdSecurity size={36} />
-                    </div>
-                    <div>
-                        <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-2">Secure Ledger Technology</h4>
-                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                            Your billing history is protected by 256-bit encryption. These records serve as official documentation for insurance claims and tax purposes. If you spot any discrepancies, please contact our medical billing department immediately.
+                {/* Footer Disclaimer */}
+                <div className="mt-12 flex items-center justify-between border-t border-outline-variant/10 pt-12 pb-8">
+                    <div className="flex items-center gap-4 max-w-xl">
+                        <div className="w-12 h-12 rounded-2xl bg-primary-custom/10 flex items-center justify-center text-primary-custom shrink-0">
+                            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>gpp_good</span>
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed text-on-surface-variant opacity-60">
+                            The Sanctuary Protocol: This financial archive is protected by AES-256 military-grade encryption. All medical billing entries are immutable and HIPAA-validated for clinical compliance.
                         </p>
+                    </div>
+                    
+                    <div className="hidden lg:flex flex-col items-end gap-1">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#191c1d]">© {new Date().getFullYear()} The Sanctuary.</div>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant opacity-40 underline cursor-pointer">Security Protocol Portal</div>
                     </div>
                 </div>
             </main>
-
-            <Footer />
         </div>
     );
 }
+
