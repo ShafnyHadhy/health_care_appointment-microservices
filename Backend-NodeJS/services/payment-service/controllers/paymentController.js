@@ -212,9 +212,9 @@ const getAllPayments = async (req, res) => {
     try {
         let payments;
         if (req.user && req.user.role === 'admin') {
-            payments = await Payment.find({});
+            payments = await Payment.find({}).sort({ createdAt: -1 });
         } else {
-            payments = await Payment.find({ patientId: req.user.id });
+            payments = await Payment.find({ patientId: req.user.id }).sort({ createdAt: -1 });
         }
         res.status(200).json(payments);
     } catch (error) {

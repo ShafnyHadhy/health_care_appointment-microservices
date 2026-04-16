@@ -26,7 +26,8 @@ export default function PaymentHistory() {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                setPayments(response.data);
+                const sortedPayments = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setPayments(sortedPayments);
             } catch (error) {
                 console.error('Error fetching payments:', error);
             } finally {
