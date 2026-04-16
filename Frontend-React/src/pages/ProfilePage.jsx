@@ -103,7 +103,7 @@ export default function ProfilePage() {
       if (userRole === "patient") {
         const appointmentsRes = await axios
           .get(
-            `http://localhost:3003/api/appointments/patient/${profile?._id || user?.id}`,
+            "http://localhost:3003/api/appointments",
             { headers: { Authorization: `Bearer ${token}` } },
           )
           .catch(() => ({ data: [] }));
@@ -146,7 +146,7 @@ export default function ProfilePage() {
       } else if (userRole === "doctor") {
         const appointmentsRes = await axios
           .get(
-            `http://localhost:3003/api/appointments/doctor/${profile?._id || user?.id}`,
+            `http://localhost:3003/api/appointments`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           .catch(() => ({ data: [] }));
@@ -371,7 +371,7 @@ export default function ProfilePage() {
         <div className="relative mb-8">
           <div className="absolute -bottom-12 left-6 md:left-8">
             <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-white shadow-lg flex items-center justify-center border-4 border-white">
-              <div className="w-full h-full rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+              <div className="w-full h-full rounded-xl bg-linear-to-br from-teal-100 to-teal-200 flex items-center justify-center">
                 <span className="text-3xl md:text-4xl font-bold text-teal-600">
                   {profile?.name?.charAt(0) || "U"}
                 </span>

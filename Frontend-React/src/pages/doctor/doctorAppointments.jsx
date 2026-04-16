@@ -32,8 +32,11 @@ export default function DoctorAppointments() {
         })
       ]);
 
-      setDoctorData(doctorRes.data.data);
+      setDoctorData(doctorRes.data);
       setAppointments(appointRes.data.data);
+
+      console.log('Doctor Data:', doctorRes.data);
+      console.log('Appointments:', appointRes.data.data);
 
     } catch (err) {
       toast.error('Failed to load dashboard');

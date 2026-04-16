@@ -44,7 +44,7 @@ export default function Header() {
   const getNav2Link = () => {
     if (!user) return "/resources";
     if (user.role === "patient") return "/find-doctor";
-    if (user.role === "doctor") return "/appointments";
+    if (user.role === "doctor") return "/doctor-appointments";
     if (user.role === "admin") return "/users";
     return "/resources";
   };

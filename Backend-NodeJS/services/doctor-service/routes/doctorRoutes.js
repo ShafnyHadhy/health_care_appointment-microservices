@@ -17,12 +17,14 @@ const {
   deletePrescription,
   updateDoctor,
   deleteDoctor,
+  getAllDoctors2,
 } = require("../controllers/doctorController");
 const { protect, authorize } = require("../middleware/auth");
 
 // ==================== PUBLIC ROUTES ====================
 router.post("/register", registerDoctor);
 router.get("/", getAllDoctors);
+router.get("/appDoc", getAllDoctors2);
 
 // ==================== PROTECTED DOCTOR PROFILE ROUTES ====================
 router.get("/profile", protect, authorize("doctor"), getDoctorProfile);

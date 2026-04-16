@@ -154,7 +154,7 @@ export default function DoctorDashboard() {
   const fetchAppointments = async () => {
     try {
       const response = await axios
-        .get("http://localhost:3003/api/appointments/doctor", {
+        .get("http://localhost:3003/api/appointments", {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })

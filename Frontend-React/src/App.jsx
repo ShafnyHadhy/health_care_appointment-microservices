@@ -26,7 +26,7 @@ function App() {
 
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/*" element={<HomePage />} />
           <Route path="/patient-register" element={<PatientRegister />} />
           <Route path="/doctor-register" element={<DoctorRegister />} />
           <Route path="/symptom-checker" element={<SymptomChecker />} />
@@ -37,7 +37,6 @@ function App() {
           {/* Doctor Routes */}
           <Route path="/doctor/*" element={<DoctorDashboard />} />{" "}
           {/* ← Changed */}
-          <Route path="/doctor-appointments" element={<DoctorAppointments />} />
           <Route path="/prescriptions" element={<PrescriptionManagerPage />} />
           {/* Patient Routes */}
           <Route path="/patient-dashboard" element={<PatientDashboard />} />

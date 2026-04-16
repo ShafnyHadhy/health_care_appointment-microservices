@@ -148,6 +148,18 @@ const getAllDoctors = async (req, res) => {
   }
 };
 
+const getAllDoctors2 = async (req, res) => {
+  try {
+    const doctors = await Doctor.find({}).sort({ createdAt: -1 });
+    res.status(200).json({
+      message: 'Doctors fetched successfully',
+      data: doctors
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 // Verify doctor (admin only)
 const verifyDoctor = async (req, res) => {
   try {
@@ -342,6 +354,7 @@ module.exports = {
   updateAvailability,
   getAvailability,
   getAllDoctors,
+  getAllDoctors2,
   verifyDoctor,
   acceptOrRejectAppointment,
   issuePrescription,
