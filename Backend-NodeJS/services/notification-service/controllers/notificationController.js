@@ -156,13 +156,15 @@ const notifyBooking = async (req, res) => {
       );
     }
 
-    // Send SMS to Doctor
+    // Send SMS to Doctor (Disabled for demo to avoid trial account 'unverified' errors)
+    /*
     if (doctor.phone) {
       await sendSMS(
         doctor.phone,
         `New appointment booked with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot}.`
       );
     }
+    */
 
     res.status(200).json({ message: "Booking notification sent successfully" });
   } catch (error) {
@@ -254,13 +256,15 @@ const notifyCompleted = async (req, res) => {
       );
     }
 
-    // Send SMS to Doctor
+    // Send SMS to Doctor (Disabled for demo to avoid trial account 'unverified' errors)
+    /*
     if (doctor.phone) {
       await sendSMS(
         doctor.phone,
         `Your consultation with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
       );
     }
+    */
 
     res
       .status(200)
