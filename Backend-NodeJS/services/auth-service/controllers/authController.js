@@ -11,7 +11,7 @@ const generateToken = (userId, role, refId) => {
 const register = async (req, res) => {
     try {
         const { email, password, role, refId } = req.body;
-        
+
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'User already exists in auth-service' });
