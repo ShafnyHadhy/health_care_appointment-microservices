@@ -120,7 +120,7 @@ export default function PaymentHistory() {
 
                 {/* Summary Bento Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                    <div className="col-span-1 md:col-span-2 bg-white p-8 rounded-[32px] shadow-sm border border-primary/5 flex flex-col justify-between relative overflow-hidden group">
+                    <div className="col-span-1 md:col-span-2 bg-white p-8 rounded-[32px] shadow-sm border-2 border-[#006063]/20 flex flex-col justify-between relative overflow-hidden group hover:border-[#006063]/40 transition-colors">
                         <div className="relative z-10">
                             <span className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em]">Total Lifetime Spending</span>
                             <div className="text-6xl font-black text-primary mt-2 tracking-tighter">
@@ -129,7 +129,7 @@ export default function PaymentHistory() {
                             </div>
                         </div>
                         <div className="mt-8 flex gap-4 relative z-10">
-                            <div className="bg-tertiary text-primary px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-1.5 uppercase border border-primary/10">
+                            <div className="bg-tertiary text-primary px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-1.5 uppercase border border-[#006063]/30">
                                 <span className="material-symbols-outlined text-xs">verified</span>
                                 Secure Transaction Log
                             </div>
@@ -137,26 +137,26 @@ export default function PaymentHistory() {
                         <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-[32px] flex flex-col justify-center border border-primary/5 shadow-sm">
+                    <div className="bg-white p-8 rounded-[32px] flex flex-col justify-center border-2 border-[#006063]/20 shadow-sm hover:border-[#006063]/40 transition-colors">
                         <div className="text-primary/50 font-black text-[10px] uppercase tracking-widest mb-4">Audit Entries</div>
                         <div className="flex items-baseline gap-2">
                             <span className="text-6xl font-black text-primary tracking-tighter">{payments.length}</span>
                             <span className="text-primary/40 font-black text-[10px] uppercase tracking-widest">Records</span>
                         </div>
-                        <div className="mt-6 w-full bg-neutral h-2 rounded-full overflow-hidden border border-primary/5">
+                        <div className="mt-6 w-full bg-neutral h-2 rounded-full overflow-hidden border border-[#006063]/10">
                             <div className="bg-primary h-full transition-all duration-1000 shadow-lg" style={{ width: `${successRate}%` }}></div>
                         </div>
                     </div>
                 </div>
 
                 {/* Transactions Section */}
-                <section className="bg-white rounded-[32px] shadow-xl shadow-primary/5 border border-primary/10 overflow-hidden">
+                <section className="bg-white rounded-[32px] shadow-xl shadow-primary/5 border-2 border-[#006063]/20 overflow-hidden">
                     {/* Filter Bar */}
-                    <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-primary/5">
+                    <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-[#006063]/10">
                         <div className="relative flex-1 max-w-md">
                             <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary/40">search</span>
                             <input 
-                                className="w-full pl-14 pr-6 py-4 bg-neutral border-none rounded-2xl text-sm font-semibold focus:ring-4 focus:ring-primary/10 transition-all outline-none placeholder:text-primary/30" 
+                                className="w-full pl-14 pr-6 py-4 bg-neutral border-2 border-[#006063]/10 rounded-2xl text-sm font-semibold focus:ring-4 focus:ring-primary/10 focus:border-[#006063]/40 transition-all outline-none placeholder:text-primary/30" 
                                 placeholder="Search archives..." 
                                 type="text"
                                 value={searchTerm}
@@ -164,8 +164,8 @@ export default function PaymentHistory() {
                             />
                         </div>
                         <div className="flex gap-2">
-                            <button className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-primary text-white shadow-lg shadow-primary/20">All Time</button>
-                            <button className="px-4 py-3 rounded-2xl text-[10px] font-black uppercase bg-neutral text-primary border border-primary/10 hover:bg-white transition-all">
+                            <button className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-[#006063] text-white shadow-lg shadow-[#006063]/20 hover:opacity-90 transition-opacity">All Time</button>
+                            <button className="px-4 py-3 rounded-2xl text-[10px] font-black uppercase bg-neutral text-primary border-2 border-[#006063]/10 hover:bg-white hover:border-[#006063]/30 transition-all">
                                 <span className="material-symbols-outlined text-[18px]">filter_list</span>
                             </button>
                         </div>
@@ -183,7 +183,7 @@ export default function PaymentHistory() {
                                     <th className="px-10 py-6 text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] text-center">Receipt</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-primary/5">
+                            <tbody className="divide-y-2 divide-[#006063]/5">
                                 {loading ? (
                                     <tr>
                                         <td colSpan="5" className="px-10 py-24 text-center text-[10px] text-primary/40 font-black uppercase tracking-[0.4em] animate-pulse">Decrypting Financial Archive...</td>
