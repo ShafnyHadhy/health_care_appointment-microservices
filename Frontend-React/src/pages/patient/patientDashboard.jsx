@@ -48,95 +48,51 @@ export default function PatientDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      toast.error('Please log in to access your dashboard');
-      navigate('/login');
+      toast.error("Please log in to access your dashboard");
+      navigate("/login");
     }
-
-    console.log('Fetching patient profile and appointments with token:', token);
 
     const fetchPatientProfile = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/patients/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/patients/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
         setPatientData(res.data);
-        console.log('Fetched patient profile:', res.data);
       } catch (error) {
-        console.error('Error fetching patient profile:', error);
+        console.error("Error fetching patient profile:", error);
       }
     };
 
     const fetchMyAppointments = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/appointments`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/appointments`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
         const myAppoints = res.data.data;
         setMyAppointments(myAppoints);
-        console.log('Fetched appointments:', myAppoints);
       } catch (error) {
-        toast.error('Failed to fetch appointments');
-        console.error('Error fetching appointments:', error);
+        toast.error("Failed to fetch appointments");
+        console.error("Error fetching appointments:", error);
       }
-    }
+    };
 
     fetchPatientProfile();
     fetchMyAppointments();
-
   }, []);
-
-  const activityItems = [
-    {
-      icon: <FlaskConical size={18} className="text-primary" />,
-      title: "Lab Results Updated",
-      desc: "Metabolic panel from General Hospital is now available.",
-      time: "2 Hours Ago",
-    },
-    {
-      icon: <Pill size={18} className="text-primary" />,
-      title: "Prescription Renewed",
-      desc: "Dr. Sarah Jenkins approved your request for Vitamin D3.",
-      time: "Yesterday",
-    },
-    {
-      icon: <UserCircle size={18} className="text-primary" />,
-      title: "Profile Information Changed",
-      desc: "Your emergency contact was updated successfully.",
-      time: "3 Days Ago",
-    },
-    {
-      icon: <CheckCircle2 size={18} className="text-primary" />,
-      title: "Health Assessment Complete",
-      desc: "The annual wellness survey has been logged to your records.",
-      time: "Oct 24",
-    },
-  ];
-
-  const metrics = [
-    { icon: <Heart size={24} />, label: "Heart Rate", val: "72", unit: "BPM" },
-    { icon: <Wind size={24} />, label: "Blood Oxygen", val: "98", unit: "%" },
-    {
-      icon: <Activity size={24} />,
-      label: "Blood Pressure",
-      val: "120/80",
-      unit: "mmHg",
-    },
-    {
-      icon: <Footprints size={24} />,
-      label: "Steps Today",
-      val: "8,432",
-      unit: "steps",
-    },
-  ];
 
   // Fetch patient profile + appointments
   useEffect(() => {
@@ -266,6 +222,8 @@ export default function PatientDashboard() {
 
     const startTimeRaw = appointment.timeSlot.split(" - ")[0];
     const startTime = convertTo24Hour(startTimeRaw);
+    // DEBUG: surface backend response to help trace missing reports
+    //console.log("fetchReports response:", response.data);
 
     const appointmentStart = new Date(`${dateStr}T${startTime}`);
     const now = new Date();
@@ -348,18 +306,16 @@ export default function PatientDashboard() {
     }
 
     try {
-      const response = await axios.delete(
-        `${API_URL}/api/patients/reports/${fileName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const deleteUrl = `http://localhost:3001/api/patients/reports/${fileName}`;
+      console.log("🗑️ Deleting:", deleteUrl);
+
+      const response = await axios.delete(deleteUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.status === 200) {
         toast.success("Report deleted successfully!");
-        fetchReports(token);
+        fetchReports(); // Refresh the list
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -370,14 +326,38 @@ export default function PatientDashboard() {
   const fetchReports = async (authToken = token) => {
     setLoadingReports(true);
     try {
-      const response = await axios.get(`${API_URL}/api/patients/reports`, {
-        headers: { Authorization: `Bearer ${authToken}` },
+      // ✅ Use direct URL like Postman
+      const url = "http://localhost:3001/api/patients/reports";
+      console.log("🔍 Fetching from:", url);
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
       });
 
-      setReports(response.data.reports || []);
+      console.log("📦 Full response:", response);
+      console.log("📦 Response data:", response.data);
+
+      // ✅ Handle response properly
+      let reportsData = [];
+      if (response.data && Array.isArray(response.data)) {
+        reportsData = response.data;
+      } else if (
+        response.data &&
+        response.data.reports &&
+        Array.isArray(response.data.reports)
+      ) {
+        reportsData = response.data.reports;
+      }
+
+      console.log("✅ Reports count:", reportsData.length);
+      setReports(reportsData);
     } catch (error) {
-      console.error("Error fetching reports:", error);
-      toast.error(error.response?.data?.message || "Failed to load reports");
+      console.error("❌ Error fetching reports:", error);
+      console.error("❌ Error response:", error.response?.data);
+      toast.error("Failed to load reports");
+      setReports([]);
     } finally {
       setLoadingReports(false);
     }
@@ -439,31 +419,41 @@ export default function PatientDashboard() {
     formData.append("report", selectedFile);
 
     try {
-      const response = await axios.post(
-        `${API_URL}/api/patients/reports/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      const uploadUrl = "http://localhost:3001/api/patients/reports/upload";
+
+      const response = await axios.post(uploadUrl, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
+
+      console.log("Upload response:", response.data);
 
       if (response.status === 201) {
         setUploadSuccess(true);
         toast.success("Medical report uploaded successfully!");
         setSelectedFile(null);
-        fetchReports(token);
-
+        await fetchReports(token);
         setTimeout(() => {
           setShowUploadModal(false);
           setUploadSuccess(false);
         }, 2000);
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      toast.error(error.response?.data?.message || "Failed to upload report");
+      console.error("❌ Upload error:", error);
+      console.error("❌ Error response:", error.response?.data);
+
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.");
+        navigate("/login");
+      } else if (error.response?.status === 403) {
+        toast.error("Access denied. Please check your permissions.");
+      } else if (error.response?.status === 404) {
+        toast.error("Upload endpoint not found. Please contact support.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to upload report");
+      }
     } finally {
       setUploading(false);
     }
@@ -698,7 +688,7 @@ export default function PatientDashboard() {
               )}
             </div>
 
-            <div className="mt-8">
+            {/* <div className="mt-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-headline font-semibold text-lg text-gray-900">
                   Recent Prescriptions
@@ -780,7 +770,7 @@ export default function PatientDashboard() {
                   </p>
                 </div>
               )}
-            </div>
+            </div> */}
           </section>
 
           <aside className="lg:col-span-4">
@@ -886,32 +876,6 @@ export default function PatientDashboard() {
             </div>
           </aside>
         </div>
-
-        <section className="mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {metrics.map((m) => (
-              <div
-                key={m.label}
-                className="bg-white p-5 rounded-lg border border-gray-200 flex items-center gap-4 shadow-sm hover:border-primary/20 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                  {React.cloneElement(m.icon, { size: 18 })}
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                    {m.label}
-                  </p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {m.val}{" "}
-                    <span className="text-xs font-medium text-gray-500">
-                      {m.unit}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {selectedAppointment && (
           <AppointmentModal
