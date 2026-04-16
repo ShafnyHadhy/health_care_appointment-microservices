@@ -52,7 +52,7 @@ export default function FindDoctor() {
 
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/doctors`)
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/doctors/appDoc`)
         const doctorsFromApi = response.data.data;
 
         const mappedDoctors = doctorsFromApi.map((d) => {

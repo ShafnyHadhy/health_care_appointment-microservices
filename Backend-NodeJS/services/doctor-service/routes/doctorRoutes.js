@@ -12,13 +12,15 @@ const {
   viewPatientReports,
   getPatientPrescriptions,
   updateDoctor,
-  deleteDoctor
+  deleteDoctor,
+  getAllDoctors2
 } = require('../controllers/doctorController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Public / Search routes
 router.post('/register', registerDoctor);
 router.get('/', getAllDoctors);
+router.get('/appDoc', getAllDoctors2);
 
 // Protected Doctor Profile
 router.get('/profile', protect, authorize('doctor'), getDoctorProfile);
