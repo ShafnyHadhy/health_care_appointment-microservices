@@ -24,11 +24,17 @@ const sendSMS = async (to, message) => {
   if (!twilioClient || !process.env.TWILIO_PHONE || !to) return;
   
   // Format number for Twilio (Ensure E.164 format)
-  // Assuming Sri Lanka (+94) if it starts with 0 or has 9 digits
   let formattedTo = to.trim();
-  if (formattedTo.startsWith('0')) {
+  if (formattedTo.startsWith('+')) {
+    // Already in E.164 format
+  } else if (formattedTo.startsWith('0')) {
+    // Local Sri Lanka format (07...)
     formattedTo = '+94' + formattedTo.substring(1);
-  } else if (!formattedTo.startsWith('+')) {
+  } else if (formattedTo.startsWith('94')) {
+    // Already has country code but no '+'
+    formattedTo = '+' + formattedTo;
+  } else {
+    // Assume local but missing the leading zero
     formattedTo = '+94' + formattedTo;
   }
 
