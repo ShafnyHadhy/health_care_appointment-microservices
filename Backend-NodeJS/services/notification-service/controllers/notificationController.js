@@ -120,28 +120,38 @@ const notifyBooking = async (req, res) => {
         });
     }
 
+    const formattedDoctorName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`;
+
     // Send email to Patient
     if (patient.email) {
       const patientMailOptions = {
-        from: process.env.EMAIL_USER,
+        from: `CareBridge Health <${process.env.EMAIL_USER}>`,
         to: patient.email,
-        subject: "Payment Confirmed - Appointment Scheduled",
+        subject: "Payment Confirmed - Your Consultation is Scheduled",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
-            <div style="background-color: #006063; padding: 20px; text-align: center;">
-              <h2 style="color: white; margin: 0;">Payment Successful</h2>
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; margin: auto;">
+            <div style="background: linear-gradient(135deg, #006063 0%, #008b8e 100%); padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: 1px;">CareBridge Health</h1>
+              <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">Official Booking Confirmation</p>
             </div>
-            <div style="padding: 20px; color: #333;">
-              <p>Hello <strong>${patientName}</strong>,</p>
-              <p>Great news! Your payment for the appointment with <strong>Dr. ${doctorName}</strong> has been received and confirmed.</p>
-              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-                <p style="margin: 5px 0;"><strong>Time:</strong> ${timeSlot}</p>
-                <p style="margin: 5px 0;"><strong>Consultation Fee:</strong> LKR ${consultationFee}</p>
-                <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #2e7d32; font-weight: bold;">CONFIRMED</span></p>
+            <div style="padding: 40px; color: #2c3e50; line-height: 1.6;">
+              <p style="font-size: 18px;">Hello <strong>${patientName}</strong>,</p>
+              <p>Your payment has been successfully processed. Your appointment is now <strong>fully confirmed</strong> and secured in our clinical system.</p>
+              
+              <div style="background-color: #f8fafc; border-left: 4px solid #006063; padding: 20px; border-radius: 4px; margin: 30px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #006063; font-size: 16px; text-transform: uppercase;">Appointment Details</h3>
+                <p style="margin: 8px 0;"><strong>Specialist:</strong> ${formattedDoctorName}</p>
+                <p style="margin: 8px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p style="margin: 8px 0;"><strong>Time Slot:</strong> ${timeSlot}</p>
+                <p style="margin: 8px 0;"><strong>Fee Paid:</strong> LKR ${consultationFee.toLocaleString()}</p>
               </div>
-              <p>You can join the consultation via your dashboard at the scheduled time.</p>
-              <p>Stay healthy,<br/>The CareBridge Team</p>
+
+              <p>Please log in to your patient portal 5 minutes before the session to join the video consultation.</p>
+              
+              <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #94a3b8; margin: 0;">CareBridge Professional Healthcare Logistics</p>
+                <p style="font-size: 12px; color: #94a3b8; margin: 5px 0;">Trincomalee, Sri Lanka • +94 (7) 4180 3961</p>
+              </div>
             </div>
           </div>
         `,
@@ -172,9 +182,10 @@ const notifyBooking = async (req, res) => {
 
     // Send WhatsApp to Patient
     if (patient.phone) {
+      const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       await sendSMS(
         patient.phone,
-        `Payment confirmed! Your appointment with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} is now CONFIRMED. Fee: LKR ${consultationFee}.`
+        `*CareBridge Health* \n\n✅ *Payment Successful*\nYour consultation with ${formattedDoctorName} on ${formattedDate} at ${timeSlot} is now *CONFIRMED*.\n\nFee: LKR ${consultationFee.toLocaleString()}\n\nThank you for choosing CareBridge.`
       );
     }
 
@@ -218,27 +229,37 @@ const notifyAccepted = async (req, res) => {
       return res.status(404).json({ message: "Patient or Doctor details not found" });
     }
 
+    const formattedDoctorName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`;
+
     // Send email to Patient
     if (patient.email) {
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: `CareBridge Health <${process.env.EMAIL_USER}>`,
         to: patient.email,
-        subject: "Appointment Accepted - Payment Required",
+        subject: "ACTION REQUIRED: Appointment Accepted by Specialist",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
-            <div style="background-color: #0288d1; padding: 20px; text-align: center;">
-              <h2 style="color: white; margin: 0;">Appointment Accepted</h2>
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; margin: auto;">
+            <div style="background: linear-gradient(135deg, #0288d1 0%, #03a9f4 100%); padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: 1px;">CareBridge Health</h1>
+              <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">Immediate Action Required</p>
             </div>
-            <div style="padding: 20px; color: #333;">
-              <p>Hello <strong>${patientName}</strong>,</p>
-              <p>Good news! Your appointment request has been <strong>accepted</strong> by <strong>Dr. ${doctorName}</strong>.</p>
-              <p>Please complete your payment to finalize the booking and secure your slot for:</p>
-              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-                <p style="margin: 5px 0;"><strong>Time:</strong> ${timeSlot}</p>
+            <div style="padding: 40px; color: #2c3e50; line-height: 1.6;">
+              <p style="font-size: 18px;">Hello <strong>${patientName}</strong>,</p>
+              <p>Your appointment request has been reviewed and **accepted** by **${formattedDoctorName}**.</p>
+              <p>To finalize your booking and secure this time slot, please complete the consultation fee payment immediately.</p>
+              
+              <div style="background-color: #f0f7ff; border-left: 4px solid #0288d1; padding: 20px; border-radius: 4px; margin: 30px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #0288d1; font-size: 16px; text-transform: uppercase;">Acceptance Summary</h3>
+                <p style="margin: 8px 0;"><strong>Provider:</strong> ${formattedDoctorName}</p>
+                <p style="margin: 8px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p style="margin: 8px 0;"><strong>Status:</strong> <span style="color: #0288d1; font-weight: bold;">WAITING FOR PAYMENT</span></p>
               </div>
-              <p>To confirm your appointment, please log in to your dashboard and complete the payment.</p>
-              <p>Stay healthy,<br/>The CareBridge Team</p>
+
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="http://localhost:5173/dashboard" style="background-color: #0288d1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Secure My Appointment (Pay Now)</a>
+              </div>
+
+              <p style="font-size: 14px; color: #64748b;">*Wait-time policy: Please complete payment within 1 hour to prevent the slot from being released to other patients.*</p>
             </div>
           </div>
         `,
@@ -248,9 +269,10 @@ const notifyAccepted = async (req, res) => {
 
     // Send WhatsApp to Patient
     if (patient.phone) {
+      const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       await sendSMS(
         patient.phone,
-        `Your appointment is accepted by Dr. ${doctorName}! Please complete your payment quickly for ${new Date(date).toLocaleDateString()}. Check your dashboard to pay.`
+        `*CareBridge Health* \n\n🔹 *Appointment Accepted*\nYour consult with ${formattedDoctorName} for ${formattedDate} has been accepted.\n\n⚠️ *Action:* Please complete your payment via the portal to confirm this slot.\n\nOfficial Portal: localhost:5173/dashboard`
       );
     }
 
