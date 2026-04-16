@@ -163,12 +163,6 @@ export default function PaymentHistory() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <div className="flex gap-2">
-                            <button className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-[#006063] text-white shadow-lg shadow-[#006063]/20 hover:opacity-90 transition-opacity">All Time</button>
-                            <button className="px-4 py-3 rounded-2xl text-[10px] font-black uppercase bg-neutral text-primary border-2 border-[#006063]/10 hover:bg-white hover:border-[#006063]/30 transition-all">
-                                <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                            </button>
-                        </div>
                     </div>
 
                     {/* Table Content */}
