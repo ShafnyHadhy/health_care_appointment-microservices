@@ -5,7 +5,6 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
-// Diagnostic Logging Middleware
 app.use((req, res, next) => {
   console.log(`[API GATEWAY] ${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
@@ -39,10 +38,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', service: 'api-gateway' });
 });
 
-const PORT = 8000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('Proxying the following services (Verified IP Routing):');
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`API Gateway is running on port ${PORT}`);
+  console.log('Proxying the following services:');
   Object.keys(routes).forEach(route => {
-    console.log(`  🔗 ${route} -> ${routes[route]}`);
+    console.log(`  ${route} -> ${routes[route]}`);
   });
 });

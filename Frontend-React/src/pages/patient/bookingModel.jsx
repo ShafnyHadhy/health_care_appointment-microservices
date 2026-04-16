@@ -33,6 +33,8 @@ export default function BookingModal({ doctor, onClose }) {
       setSlots(res.data.slots);
       setSelectedSlot(null);
 
+      console.log('Fetched slots:', res.data.slots);
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -66,9 +68,9 @@ export default function BookingModal({ doctor, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
 
-      <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl relative">
+      <div className="bg-white w-full max-w-lg rounded-xl p-6 shadow-xl relative">
 
         {/* Close Button */}
         <button onClick={onClose} className="absolute top-4 right-4">
@@ -77,7 +79,7 @@ export default function BookingModal({ doctor, onClose }) {
 
         {/* Doctor Info */}
         <div className="flex items-center gap-4 mb-4">
-          <img src="/user.jpg" className="w-14 h-14 rounded-full object-cover" />
+          <img src="/user.png" className="w-14 h-14 rounded-full object-cover" />
           <div>
             <h2 className="font-bold text-lg">{doctor.name}</h2>
             <p className="text-sm text-gray-500">{doctor.specialty}</p>
