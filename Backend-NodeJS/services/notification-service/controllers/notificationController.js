@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 const axios = require("axios");
+const jwt = require("jsonwebtoken");
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -35,11 +36,21 @@ const sendSMS = async (to, message) => {
 // Helper to fetch details
 const getDetails = async (patientId, doctorId) => {
   try {
+    // Generate an internal system token since notifications don't have user tokens
+    const token = jwt.sign(
+      { userId: 'system', role: 'admin', refId: 'system' }, 
+      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      { expiresIn: '15m' }
+    );
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
     const pRes = await axios.get(
       `${process.env.PATIENT_SERVICE_URL}/api/patients`,
+      config
     );
     const dRes = await axios.get(
       `${process.env.DOCTOR_SERVICE_URL}/api/doctors`,
+      config
     );
 
     const patient = pRes.data.data.find((p) => p._id === patientId);
