@@ -19,7 +19,7 @@ router.get('/search', searchDoctors);
 router.get('/slots', getAvailableSlots);
 
 // Internal/Webhook route for payment completion
-router.put('/:id/payment', markPaid); 
+router.put('/:id/pay', markPaid);
 
 // Protected routes
 router.use(protect);

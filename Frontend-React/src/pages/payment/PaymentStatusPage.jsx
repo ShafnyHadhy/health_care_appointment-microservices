@@ -39,7 +39,7 @@ export default function PaymentStatusPage() {
                     // Step 3: Success
                     setStep(3);
                     setTimeout(() => {
-                        navigate('/success');
+                        navigate(`/success/${appointmentId}`);
                     }, 1500);
                 }
             } catch (err) {
