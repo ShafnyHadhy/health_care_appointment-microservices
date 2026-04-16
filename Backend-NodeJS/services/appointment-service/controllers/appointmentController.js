@@ -374,7 +374,8 @@ const markPaid = async (req, res) => {
         });
       }
     } catch (notifyErr) {
-      console.warn('Booking Notification failed:', notifyErr.message);
+      console.warn('Booking Notification failed for Appt ID:', appointment._id);
+      console.warn('Reason:', notifyErr.response ? notifyErr.response.data : notifyErr.message);
     }
 
     res.status(200).json({ message: 'Appointment marked as paid', data: appointment });

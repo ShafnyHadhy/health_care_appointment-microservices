@@ -49,7 +49,7 @@ const getDetails = async (patientId, doctorId) => {
       config
     );
     const dRes = await axios.get(
-      `${process.env.DOCTOR_SERVICE_URL}/api/doctors`,
+      `${process.env.DOCTOR_SERVICE_URL}/api/doctors/appDoc`,
       config
     );
 
