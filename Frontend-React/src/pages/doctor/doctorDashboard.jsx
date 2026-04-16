@@ -568,9 +568,7 @@ export default function DoctorDashboard() {
         <div className="mb-6 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-700 p-6 text-white shadow-lg">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-teal-100">
-                Welcome Back 👋
-              </p>
+              <p className="text-sm font-medium text-teal-100">Welcome Back</p>
               <h1 className="text-2xl font-bold md:text-3xl">
                 Dr. {doctor?.name || "Doctor"}
               </h1>
