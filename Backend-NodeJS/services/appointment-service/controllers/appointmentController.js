@@ -316,8 +316,9 @@ const updateAppointmentStatus = async (req, res) => {
 
     await appointment.save();
 
-    // If accepted by doctor, trigger acceptance notification
+    // TRIGGER NOTIFICATIONS
     if (status === 'accepted') {
+      console.log(`\n\x1b[35m[APPOINTMENT SERVICE] Triggering ACCEPTANCE Notification for ID: ${appointment._id}\x1b[0m`);
       try {
         if (process.env.NOTIFICATION_SERVICE_URL) {
           await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/accepted`, {
@@ -333,11 +334,8 @@ const updateAppointmentStatus = async (req, res) => {
       } catch (notifyErr) {
         console.warn('Acceptance Notification failed:', notifyErr.message);
       }
-    }
-
-    // If marked as completed, trigger completion notification
-
-    if (status === 'completed') {
+    } else if (status === 'completed') {
+      console.log(`\n\x1b[35m[APPOINTMENT SERVICE] Triggering COMPLETION Notification for ID: ${appointment._id}\x1b[0m`);
       try {
         if (process.env.NOTIFICATION_SERVICE_URL) {
           await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/completed`, {
@@ -351,14 +349,11 @@ const updateAppointmentStatus = async (req, res) => {
           });
         }
       } catch (notifyErr) {
-        console.warn('Completed Notification failed/not implemented', notifyErr.message);
+        console.warn('Completed Notification failed', notifyErr.message);
       }
     }
 
-    res.status(200).json({
-      message: 'Appointment status updated successfully',
-      data: appointment
-    });
+    // Response
 
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
@@ -378,6 +373,8 @@ const markPaid = async (req, res) => {
     appointment.isPaid = true;
     appointment.status = 'confirmed'; // automatically confirm when paid?
     await appointment.save();
+
+    console.log(`\n\x1b[35m[APPOINTMENT SERVICE] Triggering PAYMENT CONFIRMATION Notification for ID: ${appointment._id}\x1b[0m`);
 
     // Trigger Booking Notification via Notification Service
     try {

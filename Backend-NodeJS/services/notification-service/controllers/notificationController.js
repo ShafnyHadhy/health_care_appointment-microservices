@@ -122,35 +122,48 @@ const notifyBooking = async (req, res) => {
 
     const formattedDoctorName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`;
 
+    console.log(`\n\x1b[36m[NOTIFICATION SERVICE] Processing CONFIRMATION Notification (Payment Done)\x1b[0m`);
+
     // Send email to Patient
     if (patient.email) {
       const patientMailOptions = {
-        from: `CareBridge Health <${process.env.EMAIL_USER}>`,
+        from: `"CareBridge Health Administration" <${process.env.EMAIL_USER}>`,
         to: patient.email,
-        subject: "Payment Confirmed - Your Consultation is Scheduled",
+        subject: "CONFIRMED: Your Consultation Payment has been Received",
         html: `
-          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; margin: auto;">
-            <div style="background: linear-gradient(135deg, #006063 0%, #008b8e 100%); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: 1px;">CareBridge Health</h1>
-              <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">Official Booking Confirmation</p>
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; border-top: 5px solid #006063; border-radius: 8px; overflow: hidden; margin: 20px auto; background-color: #ffffff;">
+            <div style="padding: 30px; border-bottom: 1px solid #eee; text-align: center;">
+              <h2 style="color: #006063; margin: 0; text-transform: uppercase; letter-spacing: 2px;">CareBridge Health</h2>
+              <p style="color: #666; font-size: 14px; margin-top: 5px;">Excellence in Digital Healthcare</p>
             </div>
-            <div style="padding: 40px; color: #2c3e50; line-height: 1.6;">
-              <p style="font-size: 18px;">Hello <strong>${patientName}</strong>,</p>
-              <p>Your payment has been successfully processed. Your appointment is now <strong>fully confirmed</strong> and secured in our clinical system.</p>
+            <div style="padding: 40px; color: #333; line-height: 1.6;">
+              <p style="font-size: 16px;">Dear <strong>${patientName}</strong>,</p>
+              <p>We are pleased to inform you that your payment has been successfully verified. Your consultation slot is now <strong>officially confirmed</strong> in our specialist registry.</p>
               
-              <div style="background-color: #f8fafc; border-left: 4px solid #006063; padding: 20px; border-radius: 4px; margin: 30px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #006063; font-size: 16px; text-transform: uppercase;">Appointment Details</h3>
-                <p style="margin: 8px 0;"><strong>Specialist:</strong> ${formattedDoctorName}</p>
-                <p style="margin: 8px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                <p style="margin: 8px 0;"><strong>Time Slot:</strong> ${timeSlot}</p>
-                <p style="margin: 8px 0;"><strong>Fee Paid:</strong> LKR ${consultationFee.toLocaleString()}</p>
-              </div>
+              <table style="width: 100%; border-collapse: collapse; margin: 30px 0; background-color: #fcfcfc;">
+                <tr>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;"><strong>Healthcare Professional:</strong></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;"><strong>${formattedDoctorName}</strong></td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;"><strong>Scheduled Date:</strong></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;"><strong>Time Window:</strong></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${timeSlot}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;"><strong>Financial Status:</strong></td>
+                  <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; color: #2e7d32;"><strong>LKR ${consultationFee.toLocaleString()} [PAID]</strong></td>
+                </tr>
+              </table>
 
-              <p>Please log in to your patient portal 5 minutes before the session to join the video consultation.</p>
+              <p style="font-size: 14px; color: #555;">Please ensure you have a stable internet connection and access your patient dashboard 5 minutes prior to your session to join the video consultation.</p>
               
-              <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-                <p style="font-size: 12px; color: #94a3b8; margin: 0;">CareBridge Professional Healthcare Logistics</p>
-                <p style="font-size: 12px; color: #94a3b8; margin: 5px 0;">Trincomalee, Sri Lanka • +94 (7) 4180 3961</p>
+              <div style="margin-top: 40px; padding-top: 20px; border-top: 1px dotted #ccc; text-align: center;">
+                <p style="font-size: 12px; color: #999; margin: 0;">CareBridge Professional Medical Logistics • Trincomalee, Sri Lanka</p>
+                <p style="font-size: 11px; color: #aaa; margin: 5px 0;">This is an automated system-generated billing confirmation.</p>
               </div>
             </div>
           </div>
@@ -159,33 +172,12 @@ const notifyBooking = async (req, res) => {
       await transporter.sendMail(patientMailOptions);
     }
 
-    // Send email to Doctor
-    if (doctor.email) {
-      const doctorMailOptions = {
-        from: process.env.EMAIL_USER,
-        to: doctor.email,
-        subject: "New Appointment Booking",
-        html: `
-          <h3>New Appointment Confirmed!</h3>
-          <p>Hello Dr. ${doctorName},</p>
-          <p>A new appointment has been booked with you.</p>
-          <ul>
-            <li><strong>Patient:</strong> ${patientName}</li>
-            <li><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</li>
-            <li><strong>Time:</strong> ${timeSlot}</li>
-          </ul>
-          <p>Please check your dashboard for more details.</p>
-        `,
-      };
-      await transporter.sendMail(doctorMailOptions);
-    }
-
     // Send WhatsApp to Patient
     if (patient.phone) {
       const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       await sendSMS(
         patient.phone,
-        `*CareBridge Health* \n\n✅ *Payment Successful*\nYour consultation with ${formattedDoctorName} on ${formattedDate} at ${timeSlot} is now *CONFIRMED*.\n\nFee: LKR ${consultationFee.toLocaleString()}\n\nThank you for choosing CareBridge.`
+        `*CareBridge Health - OFFICIAL*\n\n✅ *PAYMENT CONFIRMED*\nYour consultation with ${formattedDoctorName} on ${formattedDate} at ${timeSlot} is now *SECURED*.\n\n*Receipt:* LKR ${consultationFee.toLocaleString()}\n*Status:* Finalized\n\nPlease log in to the portal at the scheduled time.`
       );
     }
 
@@ -234,32 +226,31 @@ const notifyAccepted = async (req, res) => {
     // Send email to Patient
     if (patient.email) {
       const mailOptions = {
-        from: `CareBridge Health <${process.env.EMAIL_USER}>`,
+        from: `"CareBridge Health Admissions" <${process.env.EMAIL_USER}>`,
         to: patient.email,
-        subject: "ACTION REQUIRED: Appointment Accepted by Specialist",
+        subject: "REQUIREMENT: Specialist Review Complete - Payment Pending",
         html: `
-          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; margin: auto;">
-            <div style="background: linear-gradient(135deg, #0288d1 0%, #03a9f4 100%); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 24px; letter-spacing: 1px;">CareBridge Health</h1>
-              <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">Immediate Action Required</p>
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; border-top: 5px solid #0288d1; border-radius: 8px; overflow: hidden; margin: 20px auto; background-color: #ffffff;">
+            <div style="padding: 30px; border-bottom: 1px solid #eee; text-align: center;">
+              <h2 style="color: #0288d1; margin: 0; text-transform: uppercase; letter-spacing: 2px;">CareBridge Health</h2>
+              <p style="color: #666; font-size: 14px; margin-top: 5px;">Specialist Intake Update</p>
             </div>
-            <div style="padding: 40px; color: #2c3e50; line-height: 1.6;">
-              <p style="font-size: 18px;">Hello <strong>${patientName}</strong>,</p>
-              <p>Your appointment request has been reviewed and **accepted** by **${formattedDoctorName}**.</p>
-              <p>To finalize your booking and secure this time slot, please complete the consultation fee payment immediately.</p>
+            <div style="padding: 40px; color: #333; line-height: 1.6;">
+              <p style="font-size: 16px;">Dear <strong>${patientName}</strong>,</p>
+              <p>Your request for a consultation has been reviewed and <strong>formally accepted</strong> by <strong>${formattedDoctorName}</strong>.</p>
+              <p>To finalize this booking and secure the scheduled time slot, clinical policy requires the settlement of the consultation fee before confirmation.</p>
               
-              <div style="background-color: #f0f7ff; border-left: 4px solid #0288d1; padding: 20px; border-radius: 4px; margin: 30px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #0288d1; font-size: 16px; text-transform: uppercase;">Acceptance Summary</h3>
-                <p style="margin: 8px 0;"><strong>Provider:</strong> ${formattedDoctorName}</p>
-                <p style="margin: 8px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                <p style="margin: 8px 0;"><strong>Status:</strong> <span style="color: #0288d1; font-weight: bold;">WAITING FOR PAYMENT</span></p>
+              <div style="background-color: #f0f7ff; border: 1px solid #cfe2ff; padding: 20px; border-radius: 4px; margin: 30px 0;">
+                <p style="margin: 8px 0;"><strong>Assigned Specialist:</strong> ${formattedDoctorName}</p>
+                <p style="margin: 8px 0;"><strong>Proposed Date:</strong> ${new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p style="margin: 8px 0;"><strong>System Status:</strong> <span style="color: #0288d1; font-weight: bold;">WAITING FOR CLEARANCE</span></p>
               </div>
 
-              <div style="text-align: center; margin: 35px 0;">
-                <a href="http://localhost:5173/dashboard" style="background-color: #0288d1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Secure My Appointment (Pay Now)</a>
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="http://localhost:5173/dashboard" style="background-color: #0288d1; color: white; padding: 16px 32px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 14px; text-transform: uppercase;">Complete Secure Payment</a>
               </div>
 
-              <p style="font-size: 14px; color: #64748b;">*Wait-time policy: Please complete payment within 1 hour to prevent the slot from being released to other patients.*</p>
+              <p style="font-size: 12px; color: #777;"><em>*Note: This time slot is reserved for you for a limited duration. Please complete the action above to avoid automatic release of the slot.*</em></p>
             </div>
           </div>
         `,
@@ -272,7 +263,7 @@ const notifyAccepted = async (req, res) => {
       const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       await sendSMS(
         patient.phone,
-        `*CareBridge Health* \n\n🔹 *Appointment Accepted*\nYour consult with ${formattedDoctorName} for ${formattedDate} has been accepted.\n\n⚠️ *Action:* Please complete your payment via the portal to confirm this slot.\n\nOfficial Portal: localhost:5173/dashboard`
+        `*CareBridge Health - UPDATE*\n\n🔹 *APPOINTMENT ACCEPTED*\nYour consult with ${formattedDoctorName} for ${formattedDate} is accepted.\n\n*Action Required:* Please complete your payment via the portal to formally SECURE your slot.\n\nPortal: http://localhost:5173/dashboard`
       );
     }
 
@@ -283,17 +274,6 @@ const notifyAccepted = async (req, res) => {
   }
 };
 
-/**
- * @desc    Send Consultation Completed Notification
- * @route   POST /api/notify/completed
- * @access  Internal
- */
-
-/**
- * @desc    Send Consultation Completed Notification
- * @route   POST /api/notify/completed
- * @access  Internal
- */
 const notifyCompleted = async (req, res) => {
   try {
     const {
@@ -310,77 +290,55 @@ const notifyCompleted = async (req, res) => {
     const { patient, doctor } = await getDetails(patientId, doctorId);
 
     if (!patient || !doctor) {
-      return res
-        .status(404)
-        .json({
-          message: "Patient or Doctor details not found for notification",
-        });
+      return res.status(404).json({ message: "Patient or Doctor details not found" });
     }
+
+    const formattedDoctorName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`;
 
     // Send email to Patient
     if (patient.email) {
       const patientMailOptions = {
-        from: process.env.EMAIL_USER,
+        from: `"CareBridge Health - Medical Records" <${process.env.EMAIL_USER}>`,
         to: patient.email,
-        subject: "Consultation Completed",
+        subject: "Consultation Summary & Prescription Ready",
         html: `
-          <h3>Consultation Completed</h3>
-          <p>Hello ${patientName},</p>
-          <p>Your consultation with Dr. ${doctorName} has been completed.</p>
-          <ul>
-            <li><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</li>
-            <li><strong>Time:</strong> ${timeSlot}</li>
-          </ul>
-          ${prescriptionLink ? `<p>Your prescription: <a href="${prescriptionLink}">View Prescription</a></p>` : ""}
-          <p>Thank you for using our telemedicine platform!</p>
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; border-top: 5px solid #666; border-radius: 8px; overflow: hidden; margin: 20px auto; background-color: #ffffff;">
+            <div style="padding: 30px; border-bottom: 1px solid #eee; text-align: center;">
+              <h2 style="color: #444; margin: 0; text-transform: uppercase; letter-spacing: 2px;">CareBridge Health</h2>
+              <p style="color: #666; font-size: 14px; margin-top: 5px;">Post-Consultation Report</p>
+            </div>
+            <div style="padding: 40px; color: #333; line-height: 1.6;">
+              <p style="font-size: 16px;">Dear <strong>${patientName}</strong>,</p>
+              <p>Your consultation with <strong>${formattedDoctorName}</strong> has been successfully completed. Your official medical records for this session are now available.</p>
+              
+              <div style="background-color: #f8fafc; padding: 20px; border-radius: 4px; margin: 30px 0;">
+                <p style="margin: 8px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+                <p style="margin: 8px 0;"><strong>Session Time:</strong> ${timeSlot}</p>
+                <p style="margin: 8px 0;"><strong>Status:</strong> COMPLETED</p>
+              </div>
+
+              ${prescriptionLink ? `
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${prescriptionLink}" style="background-color: #444; color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Official Prescription</a>
+              </div>` : ""}
+
+              <p>We value your feedback. Please take a moment to rate your experience on our platform.</p>
+            </div>
+          </div>
         `,
       };
       await transporter.sendMail(patientMailOptions);
     }
 
-    // Send email to Doctor
-    if (doctor.email) {
-      const doctorMailOptions = {
-        from: process.env.EMAIL_USER,
-        to: doctor.email,
-        subject: "Consultation Completed",
-        html: `
-          <h3>Consultation Completed</h3>
-          <p>Hello Dr. ${doctorName},</p>
-          <p>Your consultation with patient ${patientName} has been completed.</p>
-          <ul>
-            <li><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</li>
-            <li><strong>Time:</strong> ${timeSlot}</li>
-          </ul>
-          <p>Please check your dashboard for more details.</p>
-        `,
-      };
-      await transporter.sendMail(doctorMailOptions);
-    }
-
-    // Send SMS to Patient
+    // Send WhatsApp to Patient
     if (patient.phone) {
       await sendSMS(
         patient.phone,
-        `Your consultation with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
+        `*CareBridge Health - RECORD*\n\n📋 *CONSULTATION COMPLETED*\nYour session with ${formattedDoctorName} is complete. Your prescription is ready in the patient portal.\n\nStay Healthy!`
       );
     }
 
-    // Send SMS to Doctor (Disabled for demo to avoid trial account 'unverified' errors)
-    /*
-    if (doctor.phone) {
-      await sendSMS(
-        doctor.phone,
-        `Your consultation with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
-      );
-    }
-    */
-
-    res
-      .status(200)
-      .json({
-        message: "Consultation completion notification sent successfully",
-      });
+    res.status(200).json({ message: "Consultation completion notification sent successfully" });
   } catch (error) {
     console.error("Error sending consultation completion notification:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
