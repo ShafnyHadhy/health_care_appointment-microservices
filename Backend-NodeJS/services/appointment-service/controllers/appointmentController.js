@@ -63,7 +63,7 @@ const bookAppointment = async (req, res) => {
 
     try {
 
-      const docsRes = await axios.get(`${process.env.DOCTOR_SERVICE_URL}/api/doctors/`);
+      const docsRes = await axios.get(`${process.env.DOCTOR_SERVICE_URL}/api/doctors/appDoc`);
       const doctor = docsRes.data.data.find(d => d._id === doctorId);
 
       if(doctor) {
@@ -72,7 +72,7 @@ const bookAppointment = async (req, res) => {
       }
 
       const patRes = await axios.get(`${process.env.PATIENT_SERVICE_URL}/api/patients/profile`, config);
-      patientName = patRes.data.data.name;
+      patientName = patRes.data.name;
 
     } catch (e) {
 
@@ -130,9 +130,7 @@ const getUserAppointments = async (req, res) => {
   try {
     const role = req.user.role;
     const userId = req.user.id;
-
-    console.log(`Fetching appointments for user ${userId} with role ${role}`);
-
+    
     let query = {};
     if (role === 'patient') {
       query.patientId = userId;
@@ -192,7 +190,7 @@ const getAvailableSlots = async (req, res) => {
     }
 
     const doctorRes = await axios.get(
-      `${process.env.DOCTOR_SERVICE_URL}/api/doctors`
+      `${process.env.DOCTOR_SERVICE_URL}/api/doctors/appDoc`
     );
 
     const doctor = doctorRes.data.data.find(d => d._id === doctorId);
@@ -216,6 +214,7 @@ const getAvailableSlots = async (req, res) => {
     const bookedSlots = appointments.map(a => a.timeSlot);
 
     const generateSlots = (start, end) => {
+      
       const slots = [];
       let current = new Date(`1970-01-01T${start}`);
 

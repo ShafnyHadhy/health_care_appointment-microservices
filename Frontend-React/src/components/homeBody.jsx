@@ -58,7 +58,7 @@ export default function HomeBody() {
 
           <div className="lg:col-span-5 relative mt-10 lg:mt-0">
             <div className="relative z-10 rounded-2xl overflow-hidden shadow-xl rotate-1 transition-transform hover:rotate-0 duration-700 mt-8 lg:mt-0">
-              <img className="w-full h-87.5 md:h-112.5 lg:h-120 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZaRKGPka3fVKBEe9bUIpBXU1fGVDjZrS6WvXYDqGyHBCVP4Q9NZodhUSJSVXcnUFo-PER_x8hyn1IDBjUw5I5ODg-YVVT-Mr4yISgUqxCiSSpBIqpqb6kCszqmIS05ebTzYnHawfUlR2l0AgxUIz2e5u58Kb0oKNXZx54PrzL8xKG7mwgK3Q_-NOkPYAJJNwKZXfDBx_N3ukPnfsX8HEX13jHKlreKmUyNZKbANf5w6b1aDO8FAXWHZGGL3H8iUaHIi4BGnCXePQ" alt="Doctor Consultation" />
+              <img className="w-full h-87.5 md:h-112.5 lg:h-120 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZaRKGPka3fVKBEe9bUIpBXU1fGVDjZrS6WvXYDqGyHBCVP4Q9NZodhUSJSVXcnUFo-PER_x8hyn1IDBjUw5I5ODg-YVVT-Mr4yISgUqxCiSSpBIqpqb6kCszqmIS05ebTzYnHawfUlR2l0AgxUIz2e5u58Kb0oKNXZx54PrzL8xKG7mwgK3Q_-NOkPYAJJNwKZXfDBx_N3ukPnfsX8HEX13jHKlreKmUyNZKbANf5w6b1aDO8FAXWHZGGL3H8iUaHIi4BGnCXePQ" alt="Doctor Consultation" referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent"></div>
               <div className="absolute bottom-4 left-4 right-4 p-3 md:p-4 bg-white/85 backdrop-blur-md rounded-full flex items-center gap-3 md:gap-4 border border-white/20 shadow-sm">
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-md bg-secondary-fixed flex items-center justify-center text-primary">
@@ -91,21 +91,21 @@ export default function HomeBody() {
                 <p className="text-sm md:text-base text-on-surface-variant leading-relaxed">High-definition encrypted video calls with built-in prescription tools.</p>
               </div>
               <div className="flex-1 w-full h-full min-h-40 md:min-h-45 rounded-md overflow-hidden bg-gray-100">
-                <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDthpWi9DBVOxWS8TcdmoBG4G3BFjBNJJmo2cQBOn2rNBPELHiF7NHAj5GQW9hHtAjk7tQ6a6Z9Iz96DXlrObCe-TOR6S0pQ1-kkpnm76krYE9bWYYHP3WpEzF5RrfXKrn1vmPpHdEwOsK7ge7N4PsxCcb5KXE7oWk1nNA-CVFNKolnCFkABXG64vEWO8T_924JT29PLJkoLF7mLnrERpvQJTkEdlVqGGqkM5Wmc-7-cTAbr4hb0GDcWVIjImHiYV64_x29IribY_4" alt="Dashboard" />
+                <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDthpWi9DBVOxWS8TcdmoBG4G3BFjBNJJmo2cQBOn2rNBPELHiF7NHAj5GQW9hHtAjk7tQ6a6Z9Iz96DXlrObCe-TOR6S0pQ1-kkpnm76krYE9bWYYHP3WpEzF5RrfXKrn1vmPpHdEwOsK7ge7N4PsxCcb5KXE7oWk1nNA-CVFNKolnCFkABXG64vEWO8T_924JT29PLJkoLF7mLnrERpvQJTkEdlVqGGqkM5Wmc-7-cTAbr4hb0GDcWVIjImHiYV64_x29IribY_4" alt="Dashboard" referrerPolicy="no-referrer" />
               </div>
             </div>
 
-            <div style={tealPulse} className="md:col-span-4 text-white rounded-lg p-6 md:p-8 flex flex-col justify-between shadow-md">
+            <Link to="/symptom-checker" style={tealPulse} className="md:col-span-4 text-white rounded-lg p-6 md:p-8 flex flex-col justify-between shadow-md hover:scale-[1.02] transition-transform active:scale-95 cursor-pointer">
               <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-md flex items-center justify-center mb-4 md:mb-6">
                 <MdPsychology className="text-2xl md:text-3xl text-white" />
               </div>
               <div>
                 <h3 className="font-headline font-bold text-xl md:text-2xl mb-2 md:mb-3">AI Symptom Checker</h3>
                 <span className="inline-flex items-center gap-1.5 md:gap-2 text-xs md:text-sm font-bold bg-white/10 px-3 py-1.5 md:px-4 md:py-2 rounded-md mt-2 border border-white/10">
-                  BETA Access <MdBolt className="text-sm md:text-base" />
+                  Try AI Analysis <MdBolt className="text-sm md:text-base" />
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>

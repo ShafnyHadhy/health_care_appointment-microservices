@@ -5,6 +5,11 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
+app.use((req, res, next) => {
+  console.log(`[API GATEWAY] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Define routes and their target microservices
 const routes = {
   '/api/patients': 'http://localhost:3001',
@@ -14,15 +19,16 @@ const routes = {
   '/api/payment': 'http://localhost:3005',
   '/api/admin': 'http://localhost:3006',
   '/api/telemedicine': 'http://localhost:3007',
-  '/api/auth': 'http://localhost:3008'
+  '/api/auth': 'http://localhost:3008',
+  '/api/symptoms': 'http://localhost:3009'
 };
 
 // Set up proxy middleware for each route
-for (const route in routes) {
-  const target = routes[route];
+for (const [route, target] of Object.entries(routes)) {
   app.use(route, createProxyMiddleware({
     target,
     changeOrigin: true,
+    // Preserve the full original path to avoid 404s in microservices
     pathRewrite: (path, req) => req.originalUrl
   }));
 }
