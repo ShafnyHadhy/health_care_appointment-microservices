@@ -34,9 +34,19 @@ export default function LoginPage() {
 
       console.log("Login response:", response.data);
 
-      // Extract token and user from the 'data' payload
-      const token = response.data.data?.token;
-      const user = response.data.data;
+      // Support both response shapes:
+      // 1) { token, user }
+      // 2) { message, data: { token, userId, email, role, refId } }
+      const payload = response.data;
+      const token = payload?.token || payload?.data?.token;
+
+      const userRaw = payload?.user || payload?.data?.user || payload?.data;
+      const user = {
+        id: userRaw?.id || userRaw?.userId || userRaw?._id,
+        email: userRaw?.email,
+        role: userRaw?.role,
+        refId: userRaw?.refId,
+      };
 
       if (!token) {
         throw new Error("No token received");
