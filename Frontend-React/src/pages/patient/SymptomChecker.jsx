@@ -16,6 +16,7 @@ const tealGradient = { background: 'linear-gradient(135deg, #006063 0%, #007b7f 
 
 export default function SymptomChecker() {
     const navigate = useNavigate();
+    const API_URL = import.meta.env.VITE_API_URL;
 
     // Step Tracking
     const [step, setStep] = useState(1);
@@ -97,12 +98,16 @@ export default function SymptomChecker() {
 
         if (finalSymptoms.length === 0) { toast.error('Please enter at least one symptom.'); return; }
 
+        if (!API_URL) {
+            toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+            return;
+        }
+
         if (!isReAnalysis) setStep(2);
         setIsAnalyzing(true);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const response = await axios.post(`${apiUrl}/api/symptoms/analyze`, { symptoms: finalSymptoms }, { timeout: 15000 });
+            const response = await axios.post(`${API_URL}/api/symptoms/analyze`, { symptoms: finalSymptoms }, { timeout: 15000 });
 
             if (response.data.success) {
                 const result = response.data.data;
@@ -110,7 +115,7 @@ export default function SymptomChecker() {
                 
                 // Silently save report for Admin Dashboard
                 try {
-                    await axios.post(`${apiUrl}/api/admin/ai-reports/public`, {
+                    await axios.post(`${API_URL}/api/admin/ai-reports/public`, {
                         patientName: patientName || 'Anonymous',
                         patientEmail: patientEmail || 'Not Provided',
                         patientPhone: patientPhone || 'Not Provided',
@@ -147,10 +152,14 @@ export default function SymptomChecker() {
     };
 
     const fetchDoctors = async (targetSpecialty) => {
+        if (!API_URL) {
+            toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+            return;
+        }
+
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             // Use appDoc endpoint as it might return all doctors for AI matching
-            const response = await axios.get(`${apiUrl}/api/doctors/appDoc`);
+            const response = await axios.get(`${API_URL}/api/doctors/appDoc`);
             
             if (response.data && response.data.data) {
                 const allDoctors = response.data.data;
@@ -193,9 +202,13 @@ export default function SymptomChecker() {
             return;
         }
 
+        if (!API_URL) {
+            toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+            return;
+        }
+
         setIsBooking(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const bookingData = {
                 doctorId: selectedDoctor._id,
                 date: selectedDate,
@@ -203,7 +216,7 @@ export default function SymptomChecker() {
                 reason: `AI-Powered Symptom Analysis: ${aiResult?.possibleConditions?.[0]?.name || 'Routine Checkup'}`
             };
 
-            const response = await axios.post(`${apiUrl}/api/appointments/book`, bookingData, {
+            const response = await axios.post(`${API_URL}/api/appointments/book`, bookingData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -420,7 +433,7 @@ export default function SymptomChecker() {
 
                 {/* Page Header */}
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#007B7F]/10 text-primary rounded-md font-label text-xs font-bold mb-4 tracking-wide uppercase">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-md font-label text-xs font-bold mb-4 tracking-wide uppercase">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
@@ -442,9 +455,9 @@ export default function SymptomChecker() {
                     {step === 1 && (
                         <div>
                             {/* Patient Profile */}
-                            <div className="bg-[#F4FFFB] border border-[#007B7F]/10 rounded-xl p-6 mb-8">
+                            <div className="bg-neutral border border-primary/10 rounded-xl p-6 mb-8">
                                 <h3 className="font-label text-xs font-bold text-primary uppercase tracking-widest mb-5 flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-primary rounded-full" style={{ background: '#007B7F' }} />
+                                    <span className="w-2 h-2 bg-primary rounded-full" />
                                     Patient Information
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -513,10 +526,10 @@ export default function SymptomChecker() {
                                                 <button
                                                     key={s}
                                                     onClick={() => handleAddSymptom(s)}
-                                                    className="w-full text-left px-5 py-3.5 hover:bg-[#F4FFFB] text-gray-700 hover:text-primary border-b border-gray-50 last:border-0 transition-all flex justify-between items-center font-label font-medium text-sm"
+                                                    className="w-full text-left px-5 py-3.5 hover:bg-neutral text-gray-700 hover:text-primary border-b border-gray-50 last:border-0 transition-all flex justify-between items-center font-label font-medium text-sm"
                                                 >
                                                     <span>{s}</span>
-                                                    <span className="text-[10px] font-bold text-primary bg-[#007B7F]/10 px-2.5 py-1 rounded-lg">+ Add</span>
+                                                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">+ Add</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -531,7 +544,7 @@ export default function SymptomChecker() {
                                             <button
                                                 key={s}
                                                 onClick={() => handleAddSymptom(s)}
-                                                className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-label font-semibold text-gray-600 hover:bg-[#F4FFFB] hover:text-primary hover:border-primary/30 transition-all shadow-sm"
+                                                className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-label font-semibold text-gray-600 hover:bg-neutral hover:text-primary hover:border-primary/30 transition-all shadow-sm"
                                             >
                                                 + {s}
                                             </button>
@@ -541,7 +554,7 @@ export default function SymptomChecker() {
 
                                 {/* Selected Symptoms */}
                                 {selectedSymptoms.length > 0 && (
-                                    <div className="p-5 bg-[#F4FFFB] rounded-xl border border-[#007B7F]/10">
+                                    <div className="p-5 bg-neutral rounded-xl border border-primary/10">
                                         <p className="font-label text-xs font-bold text-primary uppercase tracking-widest mb-3">Selected symptoms ({selectedSymptoms.length})</p>
                                         <div className="flex flex-wrap gap-2">
                                             {selectedSymptoms.map(s => (
@@ -660,7 +673,7 @@ export default function SymptomChecker() {
                                     <div className="flex flex-wrap gap-3 pt-2">
                                         <button
                                             onClick={() => setShowReport(true)}
-                                            className="inline-flex items-center gap-2 font-label text-xs font-bold text-primary bg-[#007B7F]/10 hover:bg-[#007B7F]/20 px-5 py-2.5 rounded-lg border border-[#007B7F]/20 transition-all"
+                                            className="inline-flex items-center gap-2 font-label text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-5 py-2.5 rounded-lg border border-primary/20 transition-all"
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -753,7 +766,7 @@ export default function SymptomChecker() {
                             <div className="mt-8">
                                 <h3 className="font-headline font-bold text-lg text-on-surface mb-6 flex items-center justify-between">
                                     Available Specialists
-                                    <span className="font-label text-xs font-bold text-primary bg-[#007B7F]/10 border border-[#007B7F]/20 px-4 py-1.5 rounded-full">
+                                    <span className="font-label text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full">
                                         {aiResult.recommendedSpecialty}
                                     </span>
                                 </h3>
@@ -850,12 +863,12 @@ export default function SymptomChecker() {
 
                                 {/* Right: Summary Sidebar */}
                                 <div className="w-full md:w-80 bg-gray-900 rounded-2xl p-8 h-max sticky top-24 border border-gray-800">
-                                    <h4 className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-8 border-b border-white/10 pb-5" style={{ color: '#00B2A9' }}>
+                                    <h4 className="font-label text-[10px] font-bold text-secondary uppercase tracking-widest mb-8 border-b border-white/10 pb-5">
                                         Booking Summary
                                     </h4>
                                     <div className="space-y-6">
                                         <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#00B2A9] border border-white/10">
+                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-secondary border border-white/10">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
@@ -863,7 +876,7 @@ export default function SymptomChecker() {
                                             <div>
                                                 <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Doctor</p>
                                                 <p className="font-headline font-bold text-white text-base leading-tight">{selectedDoctor.name || selectedDoctor.firstName}</p>
-                                                <p className="font-label text-xs font-semibold mt-0.5" style={{ color: '#00B2A9' }}>{selectedDoctor.specialty || selectedDoctor.specialization}</p>
+                                                <p className="font-label text-xs font-semibold mt-0.5 text-secondary">{selectedDoctor.specialty || selectedDoctor.specialization}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
@@ -885,7 +898,7 @@ export default function SymptomChecker() {
                                             </div>
                                             <div>
                                                 <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Schedule</p>
-                                                <p className="font-headline font-bold text-primary text-base leading-snug" style={{ color: '#00B2A9' }}>
+                                                <p className="font-headline font-bold text-secondary text-base leading-snug">
                                                     {selectedDate || 'Select Date'}<br />{selectedTime || 'Select Slot'}
                                                 </p>
                                             </div>
@@ -896,7 +909,7 @@ export default function SymptomChecker() {
                                         <button
                                             onClick={confirmBooking}
                                             disabled={isBooking || !selectedDate || !selectedTime}
-                                            className="w-full text-white font-headline font-bold py-4 px-6 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed font-label text-sm uppercase tracking-wide"
+                                            className="w-full text-white font-label font-bold py-4 px-6 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wide"
                                             style={tealGradient}
                                         >
                                             {isBooking ? 'Booking…' : 'Confirm Appointment'}
@@ -920,9 +933,9 @@ export default function SymptomChecker() {
 
             {/* ── REPORT MODAL ── */}
             {showReport && aiResult && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
                     <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setShowReport(false)} />
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-[110] flex flex-col max-h-[90vh] overflow-y-auto border border-gray-100">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-110 flex flex-col max-h-[90vh] overflow-y-auto border border-gray-100">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
                             <div className="flex items-center gap-4">
@@ -981,7 +994,7 @@ export default function SymptomChecker() {
 
                             {/* Disclaimer */}
                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
-                                <span className="text-amber-500 text-lg flex-shrink-0">⚠️</span>
+                                <span className="text-amber-500 text-lg shrink-0">⚠️</span>
                                 <p className="font-label text-[10px] text-amber-800 font-bold leading-relaxed">
                                     <strong>IMPORTANT:</strong> This is an AI-generated health assessment — NOT a medical diagnosis. Always consult a licensed physician before making any health decisions.
                                 </p>
@@ -1004,7 +1017,7 @@ export default function SymptomChecker() {
                             </div>
 
                             {/* Summary */}
-                            <div className="bg-[#F4FFFB] border-l-4 border-primary p-5 rounded-r-xl" style={{ borderLeftColor: '#007B7F' }}>
+                            <div className="bg-neutral border-l-4 border-primary p-5 rounded-r-xl">
                                 <p className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-2">AI Assessment Summary</p>
                                 <p className="font-label text-sm text-gray-800 leading-relaxed">
                                     Based on <strong className="text-gray-900">{selectedSymptoms.length}</strong> reported symptom{selectedSymptoms.length !== 1 ? 's' : ''}, the system identified{' '}
@@ -1070,7 +1083,7 @@ export default function SymptomChecker() {
 
             {/* ── EMERGENCY MODAL ── */}
             {showEmergencyProtocol && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-300 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowEmergencyProtocol(false)} />
                     <div className="relative z-10 bg-white border border-gray-100 rounded-2xl p-10 max-w-lg w-full shadow-2xl">
                         <div className="flex items-center gap-5 mb-8">

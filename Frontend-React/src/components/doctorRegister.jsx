@@ -21,6 +21,7 @@ import axios from "axios";
 
 export default function DoctorRegister() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -73,8 +74,13 @@ export default function DoctorRegister() {
     setError("");
 
     try {
+      if (!API_URL) {
+        setError("API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)");
+        return;
+      }
+
       const response = await axios.post(
-        "http://localhost:3002/api/doctors/register",
+        `${API_URL}/api/doctors/register`,
         {
           name: formData.name,
           email: formData.email,
@@ -120,7 +126,7 @@ export default function DoctorRegister() {
         );
       } else if (err.request) {
         setError(
-          "Cannot connect to server. Please check if backend is running on port 3002",
+          "Cannot connect to server. Please check VITE_API_URL and ensure the API Gateway is running.",
         );
       } else {
         setError("An error occurred. Please try again.");
@@ -379,7 +385,7 @@ export default function DoctorRegister() {
                   src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=500&h=600&fit=crop"
                   alt="Modern medical office"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-teal-900/90 via-teal-900/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-teal-900/90 via-teal-900/20 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6 text-white">
                   <span className="inline-block px-2.5 py-1 bg-white/30 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-[0.2em] mb-3">
                     CareBridge Network

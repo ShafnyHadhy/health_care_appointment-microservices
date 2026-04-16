@@ -52,6 +52,7 @@ import {
 
 export default function DoctorDashboard() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
   const [doctor, setDoctor] = useState(null);
@@ -121,22 +122,32 @@ export default function DoctorDashboard() {
         navigate("/login");
       }
     }
+
     if (!token) {
       navigate("/login");
-    } else {
-      fetchDoctorProfile();
-      fetchAppointments();
-      fetchPatients();
-      fetchPrescriptions();
-      fetchAvailability();
+      return;
     }
-  }, [token, navigate]);
+
+    if (!API_URL) {
+      toast.error(
+        "API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)",
+      );
+      setLoading(false);
+      return;
+    }
+
+    fetchDoctorProfile();
+    fetchAppointments();
+    fetchPatients();
+    fetchPrescriptions();
+    fetchAvailability();
+  }, [token, navigate, API_URL]);
 
   // Fetch Doctor Profile
   const fetchDoctorProfile = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:3002/api/doctors/profile",
+        `${API_URL}/api/doctors/profile`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setDoctor(response.data);
@@ -154,7 +165,7 @@ export default function DoctorDashboard() {
   const fetchAppointments = async () => {
     try {
       const response = await axios
-        .get("http://localhost:3003/api/appointments", {
+        .get(`${API_URL}/api/appointments`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -194,7 +205,7 @@ export default function DoctorDashboard() {
   const fetchPatients = async () => {
     try {
       const response = await axios
-        .get("http://localhost:3001/api/patients", {
+        .get(`${API_URL}/api/patients`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -219,7 +230,7 @@ export default function DoctorDashboard() {
   const fetchPrescriptions = async () => {
     try {
       const response = await axios
-        .get("http://localhost:3002/api/doctors/prescriptions", {
+        .get(`${API_URL}/api/doctors/prescriptions`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -251,7 +262,7 @@ export default function DoctorDashboard() {
     setSelectedReportPatient(patient);
     try {
       const response = await axios.get(
-        `http://localhost:3001/api/patients/patients/${patient._id}/medical-reports`,
+        `${API_URL}/api/patients/patients/${patient._id}/medical-reports`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setPatientReports(response.data?.reports || []);
@@ -271,7 +282,7 @@ export default function DoctorDashboard() {
     setLoadingAvailability(true);
     try {
       const response = await axios
-        .get("http://localhost:3002/api/doctors/availability", {
+        .get(`${API_URL}/api/doctors/availability`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -342,7 +353,7 @@ export default function DoctorDashboard() {
     setSubmitting(true);
     try {
       await axios.put(
-        "http://localhost:3002/api/doctors/availability",
+        `${API_URL}/api/doctors/availability`,
         { availability: editAvailability },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -390,7 +401,7 @@ export default function DoctorDashboard() {
   const handleAcceptAppointment = async (appointmentId) => {
     try {
       await axios.put(
-        `http://localhost:3002/api/doctors/appointments/${appointmentId}/status`,
+        `${API_URL}/api/doctors/appointments/${appointmentId}/status`,
         { status: "confirmed" },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -405,7 +416,7 @@ export default function DoctorDashboard() {
   const handleRejectAppointment = async (appointmentId) => {
     try {
       await axios.put(
-        `http://localhost:3002/api/doctors/appointments/${appointmentId}/status`,
+        `${API_URL}/api/doctors/appointments/${appointmentId}/status`,
         { status: "cancelled" },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -446,7 +457,7 @@ export default function DoctorDashboard() {
     setSubmitting(true);
     try {
       await axios.post(
-        "http://localhost:3002/api/doctors/prescriptions",
+        `${API_URL}/api/doctors/prescriptions`,
         {
           patientId: selectedPatient._id,
           medications: prescriptionForm.medications.filter((m) => m.name),
@@ -568,7 +579,9 @@ export default function DoctorDashboard() {
         <div className="mb-6 rounded-2xl bg-linear-to-r from-teal-500 to-teal-700 p-6 text-white shadow-lg">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-teal-100">Welcome Back</p>
+              <p className="text-sm font-medium text-teal-100">
+                Welcome Back
+              </p>
               <h1 className="text-2xl font-bold md:text-3xl">
                 Dr. {doctor?.name || "Doctor"}
               </h1>

@@ -24,8 +24,11 @@ export default function LoginPage() {
       setError("");
       setLoading(true);
 
-      // Direct URL to Auth Service
-      const API_URL = "http://localhost:3008";
+      // Base URL (API Gateway) - set in Vite env
+      const API_URL = import.meta.env.VITE_API_URL;
+      if (!API_URL) {
+        throw new Error("VITE_API_URL is not set");
+      }
 
       const response = await axios.post(`${API_URL}/api/auth/login`, {
         email,
@@ -85,7 +88,7 @@ export default function LoginPage() {
         }
       } else if (err.request) {
         errorMessage =
-          "Cannot connect to server. Please check if backend is running on port 3008";
+          "Cannot connect to server. Please check if the API Gateway is running.";
       }
 
       setError(errorMessage);

@@ -55,12 +55,22 @@ export default function ProfilePage() {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = user.role;
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
+
+    if (!API_URL) {
+      toast.error("API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)");
+      setLoading(false);
+      setStatsLoading(false);
+      setLoadingPrescriptions(false);
+      return;
+    }
+
     fetchProfile();
     fetchStats();
     fetchPrescriptions();
@@ -71,12 +81,12 @@ export default function ProfilePage() {
       let response;
       if (userRole === "patient") {
         response = await axios.get(
-          "http://localhost:3001/api/patients/profile",
+          `${API_URL}/api/patients/profile`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
       } else if (userRole === "doctor") {
         response = await axios.get(
-          "http://localhost:3002/api/doctors/profile",
+          `${API_URL}/api/doctors/profile`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
       } else {
@@ -103,13 +113,13 @@ export default function ProfilePage() {
       if (userRole === "patient") {
         const appointmentsRes = await axios
           .get(
-            "http://localhost:3003/api/appointments",
+            `${API_URL}/api/appointments`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           .catch(() => ({ data: [] }));
 
         const reportsRes = await axios
-          .get("http://localhost:3001/api/patients/reports", {
+          .get(`${API_URL}/api/patients/reports`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           .catch(() => ({ data: { reports: [] } }));
@@ -146,7 +156,7 @@ export default function ProfilePage() {
       } else if (userRole === "doctor") {
         const appointmentsRes = await axios
           .get(
-            `http://localhost:3003/api/appointments`,
+            `${API_URL}/api/appointments`,
             { headers: { Authorization: `Bearer ${token}` } },
           )
           .catch(() => ({ data: [] }));
@@ -251,7 +261,7 @@ export default function ProfilePage() {
     setLoadingPrescriptions(true);
     try {
       const response = await axios.get(
-        "http://localhost:3001/api/patients/prescriptions",
+        `${API_URL}/api/patients/prescriptions`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setPrescriptions(response.data.prescriptions || []);
@@ -296,7 +306,7 @@ export default function ProfilePage() {
     setPasswordLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:3008/api/auth/change-password",
+        `${API_URL}/api/auth/change-password`,
         {
           email: profile?.email,
           currentPassword: passwordData.currentPassword,
@@ -328,13 +338,13 @@ export default function ProfilePage() {
       let response;
       if (userRole === "patient") {
         response = await axios.put(
-          "http://localhost:3001/api/patients/profile",
+          `${API_URL}/api/patients/profile`,
           editForm,
           { headers: { Authorization: `Bearer ${token}` } },
         );
       } else if (userRole === "doctor") {
         response = await axios.put(
-          "http://localhost:3002/api/doctors/profile",
+          `${API_URL}/api/doctors/profile`,
           editForm,
           { headers: { Authorization: `Bearer ${token}` } },
         );

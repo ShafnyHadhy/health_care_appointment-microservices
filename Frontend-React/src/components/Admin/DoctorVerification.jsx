@@ -6,15 +6,26 @@ export default function DoctorVerification() {
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const API_URL = import.meta.env.VITE_API_URL;
+    const ensureApi = () => {
+        if (API_URL) return true;
+        toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+        return false;
+    };
+
     useEffect(() => {
         fetchDoctors();
     }, []);
 
     const fetchDoctors = async () => {
+        if (!ensureApi()) {
+            setLoading(false);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const { data } = await axios.get(`${apiUrl}/api/admin/users`, {
+            const { data } = await axios.get(`${API_URL}/api/admin/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Filter doctors who are unverified and unrejected
@@ -31,17 +42,18 @@ export default function DoctorVerification() {
     };
 
     const handleAction = async (id, action) => {
+        if (!ensureApi()) return;
+
         try {
             const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             
             if (action === 'verify') {
-                await axios.put(`${apiUrl}/api/admin/doctors/verify/${id}`, {}, {
+                await axios.put(`${API_URL}/api/admin/doctors/verify/${id}`, {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 toast.success('Doctor verified successfully');
             } else if (action === 'reject') {
-                await axios.put(`${apiUrl}/api/admin/doctors/reject/${id}`, {}, {
+                await axios.put(`${API_URL}/api/admin/doctors/reject/${id}`, {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 toast.success('Doctor application rejected');

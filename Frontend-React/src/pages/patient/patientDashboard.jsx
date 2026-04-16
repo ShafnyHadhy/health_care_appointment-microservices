@@ -306,7 +306,7 @@ export default function PatientDashboard() {
     }
 
     try {
-      const deleteUrl = `http://localhost:3001/api/patients/reports/${fileName}`;
+      const deleteUrl = `${API_URL}/api/patients/reports/${fileName}`;
       console.log("🗑️ Deleting:", deleteUrl);
 
       const response = await axios.delete(deleteUrl, {
@@ -326,8 +326,7 @@ export default function PatientDashboard() {
   const fetchReports = async (authToken = token) => {
     setLoadingReports(true);
     try {
-      // ✅ Use direct URL like Postman
-      const url = "http://localhost:3001/api/patients/reports";
+      const url = `${API_URL}/api/patients/reports`;
       console.log("🔍 Fetching from:", url);
 
       const response = await axios.get(url, {
@@ -419,7 +418,7 @@ export default function PatientDashboard() {
     formData.append("report", selectedFile);
 
     try {
-      const uploadUrl = "http://localhost:3001/api/patients/reports/upload";
+      const uploadUrl = `${API_URL}/api/patients/reports/upload`;
 
       const response = await axios.post(uploadUrl, formData, {
         headers: {
