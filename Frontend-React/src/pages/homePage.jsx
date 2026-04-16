@@ -5,6 +5,7 @@ import Footer from "../components/footer";
 import FindDoctor from "./findDoctor";
 import PatientDashboard from "./patient/patientDashboard";
 import ConfirmBooking from "./patient/confirmAppointment";
+import DoctorAppointments from "./doctor/doctorAppointments";
 
 export default function HomePage() {
     return (
@@ -20,6 +21,7 @@ export default function HomePage() {
                 <Route path="find-doctor" element={<FindDoctor />} /> 
                 <Route path="patient-dashboard" element={<PatientDashboard/>} />
                 <Route path="confirm-booking" element={<ConfirmBooking />} />
+                <Route path="/doctor-appointments" element={<DoctorAppointments />} />
 
                 <Route path="*" element={<h1>404 not found</h1>} />
             </Routes>

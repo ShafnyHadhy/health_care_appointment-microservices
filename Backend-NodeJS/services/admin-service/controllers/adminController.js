@@ -75,13 +75,24 @@ const registerAdmin = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
+
+        const extractArray = (axiosResponse) => {
+            const payload = axiosResponse?.data;
+            if (Array.isArray(payload)) return payload; // many services return array directly
+            if (Array.isArray(payload?.data)) return payload.data; // legacy { data: [...] }
+            return [];
+        };
+
         const [patientsRes, doctorsRes] = await Promise.allSettled([
             axios.get(`${PATIENT_SERVICE}/api/patients`, config),
             axios.get(`${DOCTOR_SERVICE}/api/doctors`, config)
         ]);
 
-        const patients = patientsRes.status === 'fulfilled' ? patientsRes.value.data.data.map(p => ({ ...p, userType: 'patient' })) : [];
-        const doctors = doctorsRes.status === 'fulfilled' ? doctorsRes.value.data.data.map(d => ({ ...d, userType: 'doctor' })) : [];
+        const patientsRaw = patientsRes.status === 'fulfilled' ? extractArray(patientsRes.value) : [];
+        const doctorsRaw = doctorsRes.status === 'fulfilled' ? extractArray(doctorsRes.value) : [];
+
+        const patients = patientsRaw.map((p) => ({ ...p, userType: 'patient' }));
+        const doctors = doctorsRaw.map((d) => ({ ...d, userType: 'doctor' }));
 
         res.status(200).json({
             message: 'Users fetched successfully',
@@ -155,9 +166,20 @@ const getDashboardCounts = async (req, res) => {
             axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config)
         ]);
 
-        const patients = patientsRes.status === 'fulfilled' ? patientsRes.value.data.data : [];
-        const doctors = doctorsRes.status === 'fulfilled' ? doctorsRes.value.data.data : [];
-        const appointments = appointmentsRes.status === 'fulfilled' ? appointmentsRes.value.data.data : [];
+        const extractArray = (axiosResponse) => {
+            const payload = axiosResponse?.data;
+            if (Array.isArray(payload)) return payload;
+            if (Array.isArray(payload?.data)) return payload.data;
+            return [];
+        };
+
+        const patients = patientsRes.status === 'fulfilled' ? extractArray(patientsRes.value) : [];
+        const doctors = doctorsRes.status === 'fulfilled' ? extractArray(doctorsRes.value) : [];
+
+        // appointment-service returns: { message, data: [...] }
+        const appointments = appointmentsRes.status === 'fulfilled'
+            ? (appointmentsRes.value?.data?.data || [])
+            : [];
 
         // --- Analytics Calculations ---
         const last7Days = [...Array(7)].map((_, i) => {
@@ -169,34 +191,32 @@ const getDashboardCounts = async (req, res) => {
         // 1. Registrations over last 7 days
         const registrationsByDate = last7Days.map(date => {
             const count = [...patients, ...doctors].filter(u => {
-                const uDate = u.createdAt ? u.createdAt.split('T')[0] : null;
+                const uDate = u?.createdAt ? u.createdAt.split('T')[0] : null;
                 return uDate === date;
             }).length;
             return count;
         });
 
         // 2. Revenue over last 7 days
-        let totalRevenue = 0;
         const revenueByDate = last7Days.map(date => {
             let dailyRev = 0;
+
             appointments.forEach(appt => {
-                const apptDate = appt.appointmentDate ? appt.appointmentDate.split('T')[0] : null;
-                if (apptDate === date && (appt.isPaid || appt.status === 'completed')) {
-                    const fee = appt.consultationFee || 0;
-                    dailyRev += fee;
-                }
-                // Aggregate for total
-                if (appt.isPaid || appt.status === 'completed') {
-                    totalRevenue += (appt.consultationFee || 0);
+                const rawDate = appt?.appointmentDate || appt?.date; // supports both field names
+                const apptDate = rawDate ? new Date(rawDate).toISOString().split('T')[0] : null;
+
+                if (apptDate === date && (appt?.isPaid || appt?.status === 'completed' || appt?.status === 'confirmed')) {
+                    dailyRev += (appt?.consultationFee || 0);
                 }
             });
+
             return dailyRev;
         });
 
         // 3. Appointments by Specialty
         const specialtyMap = {};
         appointments.forEach(appt => {
-            const spec = appt.specialization || 'General';
+            const spec = appt?.specialization || appt?.specialty || 'General';
             specialtyMap[spec] = (specialtyMap[spec] || 0) + 1;
         });
         const appointmentsBySpecialty = Object.entries(specialtyMap).map(([name, count]) => ({ name, count }));

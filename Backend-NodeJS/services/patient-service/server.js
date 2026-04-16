@@ -13,8 +13,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded files statically
-app.use("/uploads", express.static(path.join(__dirname, "uploads/reports")));
+// ✅ Fix: Serve the uploads folder directly (not uploads/reports)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Database Connection
 mongoose
