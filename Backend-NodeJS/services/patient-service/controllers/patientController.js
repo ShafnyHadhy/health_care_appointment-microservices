@@ -129,8 +129,11 @@ const getAllPatients = async (req, res) => {
       .select("-password")
       .sort({ createdAt: -1 });
 
-    // ✅ Return array directly (simpler for frontend)
-    res.status(200).json(patients);
+    // ✅ Return wrapped object for consistency
+    res.status(200).json({
+      message: "Patients fetched successfully",
+      data: patients,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
