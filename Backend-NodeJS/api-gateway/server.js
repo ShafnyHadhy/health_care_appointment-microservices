@@ -38,7 +38,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', service: 'api-gateway' });
 });
 
-const PORT = 5000;
+const PORT = 8000;
 app.listen(PORT, () => {
   console.log(`API Gateway is running on port ${PORT}`);
   console.log('Proxying the following services:');

@@ -35,11 +35,6 @@ export default function SymptomChecker() {
     const [doctors, setDoctors] = useState([]);
     const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-    // Step 4: Booking
-    const [selectedDate, setSelectedDate] = useState('');
-    const [selectedTime, setSelectedTime] = useState('');
-    const [isBooking, setIsBooking] = useState(false);
-
     // Patient Profile
     const [patientName, setPatientName] = useState('');
     const [patientEmail, setPatientEmail] = useState('');
@@ -180,46 +175,9 @@ export default function SymptomChecker() {
     };
 
     const handleDoctorSelect = (doc) => {
-        setSelectedDoctor(doc);
-        setStep(4);
-    };
-
-    const confirmBooking = async () => {
-        if (!selectedDate || !selectedTime) { toast.error('Please select both date and time.'); return; }
-        
-        const token = localStorage.getItem('token');
-        if (!token) {
-            toast.error('Please login as a patient to book an appointment.');
-            return;
-        }
-
-        setIsBooking(true);
-        try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const bookingData = {
-                doctorId: selectedDoctor._id,
-                date: selectedDate,
-                timeSlot: selectedTime,
-                reason: `AI-Powered Symptom Analysis: ${aiResult?.possibleConditions?.[0]?.name || 'Routine Checkup'}`
-            };
-
-            const response = await axios.post(`${apiUrl}/api/appointments/book`, bookingData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data) {
-                toast.success('Appointment Booked Successfully!');
-                // Wait a moment so toast is visible
-                setTimeout(() => {
-                    navigate('/patient-dashboard');
-                }, 1500);
-            }
-        } catch (error) {
-            console.error('Booking Error:', error);
-            const errorMsg = error.response?.data?.message || 'Failed to book appointment. Please try again.';
-            toast.error(errorMsg);
-        } finally {
-            setIsBooking(false);
+        const wantsToBook = window.confirm(`Would you like to proceed to the main appointment portal to book a consultation with Dr. ${doc.name}?`);
+        if (wantsToBook) {
+            navigate('/find-doctor', { state: { selectedDoctor: doc } });
         }
     };
 
@@ -377,7 +335,7 @@ export default function SymptomChecker() {
     };
 
     // Progress Steps
-    const steps = ['Symptoms', 'Analysis', 'Results', 'Booking'];
+    const steps = ['Symptoms', 'Analysis', 'Results'];
 
     const renderProgressBar = (current) => (
         <div className="mb-10">
@@ -717,31 +675,56 @@ export default function SymptomChecker() {
                                             >
                                                 <p className={`font-label font-semibold text-sm ${clickedQuestionIdx === idx ? 'text-blue-700' : 'text-gray-800'}`}>{q}</p>
                                                 <div className="flex gap-2 shrink-0">
-                                                    <button
-                                                        disabled={isAnalyzing}
-                                                        onClick={() => {
-                                                            setClickedQuestionIdx(idx);
-                                                            const cleanSymptom = q
-                                                                .replace(/^(Is the|Does the|Do you|Has the|Have you|Is there|When did|Are you experiencing|Are you also experiencing|Are you feeling|Do you notice|Is your|Have you felt|Any)\s+/i, '')
-                                                                .replace(/\?$/, '')
-                                                                .trim();
-                                                            setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }));
-                                                            const newList = [...new Set([...selectedSymptoms, cleanSymptom])];
-                                                            setSelectedSymptoms(newList);
-                                                            runAnalysis(newList);
-                                                        }}
-                                                        className={`px-5 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-wide transition-all ${isAnalyzing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-white hover:opacity-90'}`}
-                                                        style={isAnalyzing ? {} : tealGradient}
-                                                    >
-                                                        {isAnalyzing && clickedQuestionIdx === idx ? 'Updating…' : 'Yes'}
-                                                    </button>
-                                                    <button
-                                                        disabled={isAnalyzing}
-                                                        onClick={() => setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }))}
-                                                        className={`px-5 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-wide border transition-all ${isAnalyzing ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-200'}`}
-                                                    >
-                                                        No
-                                                    </button>
+                                                    {q.toLowerCase().includes('how long') ? (
+                                                        <>
+                                                            {['1-3 days', '1-2 weeks', '1+ months'].map(duration => (
+                                                                <button
+                                                                    key={duration}
+                                                                    disabled={isAnalyzing}
+                                                                    onClick={() => {
+                                                                        setClickedQuestionIdx(idx);
+                                                                        setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }));
+                                                                        const newList = [...new Set([...selectedSymptoms, `Symptom duration: ${duration}`])];
+                                                                        setSelectedSymptoms(newList);
+                                                                        runAnalysis(newList);
+                                                                    }}
+                                                                    className={`px-3 py-2 rounded-lg font-label text-[10px] font-bold uppercase tracking-wide transition-all ${isAnalyzing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-white hover:opacity-90'}`}
+                                                                    style={isAnalyzing ? {} : tealGradient}
+                                                                >
+                                                                    {isAnalyzing && clickedQuestionIdx === idx ? 'Updating…' : duration}
+                                                                </button>
+                                                            ))}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                disabled={isAnalyzing}
+                                                                onClick={() => {
+                                                                    setClickedQuestionIdx(idx);
+                                                                    const cleanSymptom = q
+                                                                        .replace(/^(Is the|Does the|Do you|Has the|Have you|Is there|When did|Are you experiencing|Are you also experiencing|Are you feeling|Do you notice|Is your|Have you felt|Any)\s+/i, '')
+                                                                        .replace(/\?$/, '')
+                                                                        .trim();
+                                                                    setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }));
+                                                                    const newList = [...new Set([...selectedSymptoms, cleanSymptom])];
+                                                                    setSelectedSymptoms(newList);
+                                                                    runAnalysis(newList);
+                                                                }}
+                                                                className={`px-5 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-wide transition-all ${isAnalyzing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-white hover:opacity-90'}`}
+                                                                style={isAnalyzing ? {} : tealGradient}
+                                                            >
+                                                                {isAnalyzing && clickedQuestionIdx === idx ? 'Updating…' : 'Yes'}
+                                                            </button>
+                                                            <button
+                                                                disabled={isAnalyzing}
+                                                                onClick={() => setAiResult(prev => ({ ...prev, followUpQuestions: prev.followUpQuestions.filter((_, i) => i !== idx) }))}
+                                                                className={`px-5 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-wide border transition-all ${isAnalyzing ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-200'}`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </>
+                                                    )}
+
                                                 </div>
                                             </div>
                                         ))}
@@ -805,116 +788,6 @@ export default function SymptomChecker() {
                         </div>
                     )}
 
-                    {/* ── STEP 4: BOOKING ── */}
-                    {step === 4 && selectedDoctor && (
-                        <div>
-                            <h2 className="font-headline font-bold text-xl text-on-surface mb-8 flex items-center gap-3">
-                                <span className="flex items-center justify-center w-7 h-7 rounded-lg text-white text-xs font-bold" style={tealGradient}>3</span>
-                                Book Your Appointment
-                            </h2>
-
-                            <div className="flex flex-col md:flex-row gap-8">
-                                {/* Left: Date & Time */}
-                                <div className="flex-1 space-y-6">
-                                    <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-                                        <label className="block font-label text-xs font-bold text-primary uppercase tracking-widest mb-4">Select Date</label>
-                                        <input
-                                            type="date"
-                                            value={selectedDate}
-                                            onChange={e => setSelectedDate(e.target.value)}
-                                            min={new Date().toISOString().split('T')[0]}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:border-primary/40 text-gray-900 font-label font-semibold text-base"
-                                        />
-                                    </div>
-
-                                    <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-                                        <label className="block font-label text-xs font-bold text-primary uppercase tracking-widest mb-4">Select Time</label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                            {['09:00 AM', '10:30 AM', '01:00 PM', '02:30 PM', '04:00 PM'].map(time => (
-                                                <button
-                                                    key={time}
-                                                    onClick={() => setSelectedTime(time)}
-                                                    className={`py-3.5 px-4 border-2 rounded-xl font-label text-xs font-bold transition-all uppercase tracking-wide ${
-                                                        selectedTime === time
-                                                            ? 'text-white border-transparent'
-                                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-primary/30 hover:text-primary'
-                                                    }`}
-                                                    style={selectedTime === time ? tealGradient : {}}
-                                                >
-                                                    {time}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right: Summary Sidebar */}
-                                <div className="w-full md:w-80 bg-gray-900 rounded-2xl p-8 h-max sticky top-24 border border-gray-800">
-                                    <h4 className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-8 border-b border-white/10 pb-5" style={{ color: '#00B2A9' }}>
-                                        Booking Summary
-                                    </h4>
-                                    <div className="space-y-6">
-                                        <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#00B2A9] border border-white/10">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Doctor</p>
-                                                <p className="font-headline font-bold text-white text-base leading-tight">{selectedDoctor.name || selectedDoctor.firstName}</p>
-                                                <p className="font-label text-xs font-semibold mt-0.5" style={{ color: '#00B2A9' }}>{selectedDoctor.specialty || selectedDoctor.specialization}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-emerald-400 border border-white/10">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Condition</p>
-                                                <p className="font-headline font-bold text-white text-base leading-tight">{aiResult?.possibleConditions?.[0]?.name || 'Clinical Triage'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-4">
-                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-blue-400 border border-white/10">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="font-label text-[10px] font-bold text-gray-500 uppercase mb-1">Schedule</p>
-                                                <p className="font-headline font-bold text-primary text-base leading-snug" style={{ color: '#00B2A9' }}>
-                                                    {selectedDate || 'Select Date'}<br />{selectedTime || 'Select Slot'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-8 space-y-3">
-                                        <button
-                                            onClick={confirmBooking}
-                                            disabled={isBooking || !selectedDate || !selectedTime}
-                                            className="w-full text-white font-headline font-bold py-4 px-6 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed font-label text-sm uppercase tracking-wide"
-                                            style={tealGradient}
-                                        >
-                                            {isBooking ? 'Booking…' : 'Confirm Appointment'}
-                                        </button>
-                                        <button
-                                            onClick={() => setStep(3)}
-                                            className="w-full text-gray-400 hover:text-white font-label font-semibold py-3 text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                            </svg>
-                                            Back to Results
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </main>
 

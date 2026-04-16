@@ -12,6 +12,13 @@ const getAxiosConfig = (req) => {
     };
 };
 
+const extractArray = (axiosResponse) => {
+    const payload = axiosResponse?.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+};
+
 const PATIENT_SERVICE = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
 const DOCTOR_SERVICE = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
 const APPOINTMENT_SERVICE = process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003';
@@ -75,13 +82,6 @@ const registerAdmin = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
-
-        const extractArray = (axiosResponse) => {
-            const payload = axiosResponse?.data;
-            if (Array.isArray(payload)) return payload; // many services return array directly
-            if (Array.isArray(payload?.data)) return payload.data; // legacy { data: [...] }
-            return [];
-        };
 
         const [patientsRes, doctorsRes] = await Promise.allSettled([
             axios.get(`${PATIENT_SERVICE}/api/patients`, config),
@@ -183,13 +183,6 @@ const getDashboardCounts = async (req, res) => {
             axios.get(`${DOCTOR_SERVICE}/api/doctors/appDoc`, config),
             axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config)
         ]);
-
-        const extractArray = (axiosResponse) => {
-            const payload = axiosResponse?.data;
-            if (Array.isArray(payload)) return payload;
-            if (Array.isArray(payload?.data)) return payload.data;
-            return [];
-        };
 
         const patients = patientsRes.status === 'fulfilled' ? extractArray(patientsRes.value) : [];
         const doctors = doctorsRes.status === 'fulfilled' ? extractArray(doctorsRes.value) : [];

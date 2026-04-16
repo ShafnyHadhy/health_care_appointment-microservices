@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, 
-  Star, 
-  Verified, 
-  MapPin, 
-  Calendar, 
-  Languages, 
-  Video, 
-  ChevronDown, 
-  Info, 
+import {
+  Search,
+  Star,
+  Verified,
+  MapPin,
+  Calendar,
+  Languages,
+  Video,
+  ChevronDown,
+  Info,
   Users,
   Award,
   Stethoscope,
@@ -34,8 +34,8 @@ export default function FindDoctor() {
   const filteredDoctors = allDoctors.filter(doc => {
     const matchesSpecialty = selectedSpecialty === 'All' || doc.specialty?.toLowerCase() === selectedSpecialty.toLowerCase();
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = !searchLower || 
-      doc.name?.toLowerCase().includes(searchLower) || 
+    const matchesSearch = !searchLower ||
+      doc.name?.toLowerCase().includes(searchLower) ||
       doc.specialty?.toLowerCase().includes(searchLower);
     return matchesSpecialty && matchesSearch;
   });
@@ -58,7 +58,7 @@ export default function FindDoctor() {
         const mappedDoctors = doctorsFromApi.map((d) => {
 
           let availabilityText = null;
-          
+
           if (Array.isArray(d.availability) && d.availability.length > 0) {
             availabilityText = 'Available Today';
           }
@@ -95,13 +95,13 @@ export default function FindDoctor() {
   return (
     <div className="bg-neutral font-body text-on-surface">
       <main className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen px-8 py-8 gap-8 items-start">
-        
+
         {/* Filter Sidebar */}
         <aside className="w-full md:w-64 lg:w-72 shrink-0 sticky top-8">
           <div className="bg-white p-5 rounded-xl space-y-6 border border-gray-300 shadow-sm max-h-[calc(100vh-4rem)] overflow-y-auto hover:scrollbar-thin">
             <div className="flex items-center justify-between">
               <h2 className="font-headline font-bold text-xl text-primary">Filters</h2>
-              <button 
+              <button
                 onClick={() => { setSelectedSpecialty('All'); setSearchQuery(''); }}
                 className="text-xs font-semibold text-primary/70 hover:text-primary py-1 px-2 rounded-full transition-colors bg-primary/70/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40"
               >
@@ -115,12 +115,12 @@ export default function FindDoctor() {
               <div className="space-y-2">
                 {['All', 'Cardiology', 'Pediatrics', 'Dermatology', 'Neurology', 'Psychiatry', 'Orthopedics', 'Ophthalmology', 'Gastroenterology'].map((spec) => (
                   <label key={spec} className="flex items-center group cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                    <input 
-                      type="radio" 
+                    <input
+                      type="radio"
                       name="specialty"
                       checked={selectedSpecialty === spec}
                       onChange={() => setSelectedSpecialty(spec)}
-                      className="text-primary focus:ring-primary mr-3 h-4 w-4 border-outline-variant bg-surface-container-lowest" 
+                      className="text-primary focus:ring-primary mr-3 h-4 w-4 border-outline-variant bg-surface-container-lowest"
                     />
                     <span className={`text-black text-sm transition-colors ${selectedSpecialty === spec ? 'font-semibold text-primary' : 'group-hover:text-primary'}`}>
                       {spec}
@@ -152,11 +152,11 @@ export default function FindDoctor() {
             </div>
             <div className="flex-1 max-w-md relative bg-white rounded-xl border border-primary/20">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by doctor name, specialty, or condition..." 
+                placeholder="Search by doctor name, specialty, or condition..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-shadow"
               />
             </div>
@@ -173,7 +173,7 @@ export default function FindDoctor() {
                 <div className="grow flex flex-col justify-between min-w-0">
                   <div>
                     <div className="flex justify-between items-start gap-2">
-                       <div className="truncate">
+                      <div className="truncate">
                         <h3 className="font-headline text-base font-bold text-gray-900 truncate">{doc.name}</h3>
                         <p className="text-primary font-medium text-[13px] truncate">{doc.specialty}</p>
                       </div>
@@ -200,7 +200,7 @@ export default function FindDoctor() {
                   </div>
 
                   <div className="mt-3.5 flex gap-2">
-                    <button 
+                    <button
                       onClick={() => handleBookClick(doc)}
                       className="grow py-2 px-4 rounded-xl font-headline font-bold text-sm bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
