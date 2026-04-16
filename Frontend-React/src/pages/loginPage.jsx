@@ -108,7 +108,7 @@ export default function LoginPage() {
       </div>
 
       <main className="w-full max-w-4xl h-full max-h-150 grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden bg-surface-container-low rounded-lg shadow-md relative z-10">
-        <div className="hidden md:flex md:col-span-7 flex-col justify-between p-6 md:p-8 relative overflow-hidden bg-surface-container-highest bg-tertiary">
+        <div className="hidden md:flex md:col-span-7 flex-col justify-between p-6 md:p-8 relative overflow-hidden bg-tertiary">
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-6">
               <MdMedicalServices className="text-primary text-2xl" />

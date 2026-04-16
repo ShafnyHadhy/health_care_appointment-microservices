@@ -66,7 +66,7 @@ export default function HomeBody() {
                 </div>
                 <div>
                   <p className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-widest">Live Consultation</p>
-                  <p className="text-sm md:text-base text-on-surface font-semibold">Dr. Sarah Jenkins</p>
+                  <p className="text-sm md:text-base text-on-surface font-semibold">Dr. Asanka Perera</p>
                 </div>
               </div>
             </div>

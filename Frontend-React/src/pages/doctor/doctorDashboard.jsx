@@ -565,7 +565,7 @@ export default function DoctorDashboard() {
       <Header />
       <main className="max-w-7xl mx-auto px-4 py-6 md:px-8 pb-20">
         {/* Welcome Header */}
-        <div className="mb-6 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-700 p-6 text-white shadow-lg">
+        <div className="mb-6 rounded-2xl bg-linear-to-r from-teal-500 to-teal-700 p-6 text-white shadow-lg">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-teal-100">Welcome Back</p>
@@ -1469,7 +1469,7 @@ export default function DoctorDashboard() {
       {showReportModal && selectedReportPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center">
+            <div className="bg-linear-to-r from-teal-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <FileText size={24} />
                 <div>
@@ -1559,7 +1559,7 @@ export default function DoctorDashboard() {
       {showPrescriptionDetailsModal && selectedPrescription && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center">
+            <div className="sticky top-0 bg-linear-to-r from-teal-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Pill size={24} />
                 <h2 className="text-xl font-bold">Prescription Details</h2>
