@@ -43,7 +43,18 @@ export default function PatientDashboard() {
   const navigate = useNavigate();
   const [myAppointments, setMyAppointments] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [patientData, setPatientData] = useState(null); // State for patient details
+  const [patientData, setPatientData] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [user, setUser] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -52,6 +63,8 @@ export default function PatientDashboard() {
       navigate('/login');
     }
 
+    console.log('Fetching patient profile and appointments with token:', token);
+
     const fetchPatientProfile = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/patients/profile`, {
@@ -59,7 +72,8 @@ export default function PatientDashboard() {
             Authorization: `Bearer ${token}`
           }
         });
-        setPatientData(res.data.data);
+        setPatientData(res.data);
+        console.log('Fetched patient profile:', res.data);
       } catch (error) {
         console.error('Error fetching patient profile:', error);
       }
@@ -86,16 +100,6 @@ export default function PatientDashboard() {
     fetchMyAppointments();
 
   }, []);
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [user, setUser] = useState(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [reports, setReports] = useState([]);
-  const [loadingReports, setLoadingReports] = useState(false);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
   const activityItems = [
     {
@@ -250,7 +254,6 @@ export default function PatientDashboard() {
 
   const canJoin = nextAppointment && canJoinNow(nextAppointment);
 
-  // Fetch user and reports on load
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -289,7 +292,6 @@ export default function PatientDashboard() {
     }
   };
 
-  // Fetch all reports
   const fetchReports = async () => {
     setLoadingReports(true);
     try {
@@ -324,7 +326,6 @@ export default function PatientDashboard() {
     }
   };
 
-  // Handle file selection
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -346,7 +347,6 @@ export default function PatientDashboard() {
     }
   };
 
-  // Handle file upload
   const handleUpload = async () => {
     if (!selectedFile) {
       toast.error("Please select a file first");
@@ -668,7 +668,7 @@ export default function PatientDashboard() {
 
           {/* Activity Sidebar */}
           <aside className="lg:col-span-4">
-            <div className="bg-white border border-gray-200 rounded-xl p-6 h-full shadow-sm max-h-125 overflow-y-auto hover:scrollbar-thin">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 h-full shadow-sm max-h-150 overflow-y-auto hover:scrollbar-thin">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-headline font-semibold text-lg text-gray-900">My Appointments</h3>
               </div>
