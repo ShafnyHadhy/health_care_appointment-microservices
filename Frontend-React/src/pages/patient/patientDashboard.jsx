@@ -55,8 +55,6 @@ export default function PatientDashboard() {
       navigate("/login");
     }
 
-    console.log("Fetching patient profile and appointments with token:", token);
-
     const fetchPatientProfile = async () => {
       try {
         const res = await axios.get(
@@ -68,7 +66,6 @@ export default function PatientDashboard() {
           },
         );
         setPatientData(res.data);
-        console.log("Fetched patient profile:", res.data);
       } catch (error) {
         console.error("Error fetching patient profile:", error);
       }
@@ -87,7 +84,6 @@ export default function PatientDashboard() {
 
         const myAppoints = res.data.data;
         setMyAppointments(myAppoints);
-        console.log("Fetched appointments:", myAppoints);
       } catch (error) {
         toast.error("Failed to fetch appointments");
         console.error("Error fetching appointments:", error);
@@ -97,50 +93,6 @@ export default function PatientDashboard() {
     fetchPatientProfile();
     fetchMyAppointments();
   }, []);
-
-  const activityItems = [
-    {
-      icon: <FlaskConical size={18} className="text-primary" />,
-      title: "Lab Results Updated",
-      desc: "Metabolic panel from General Hospital is now available.",
-      time: "2 Hours Ago",
-    },
-    {
-      icon: <Pill size={18} className="text-primary" />,
-      title: "Prescription Renewed",
-      desc: "Dr. Sarah Jenkins approved your request for Vitamin D3.",
-      time: "Yesterday",
-    },
-    {
-      icon: <UserCircle size={18} className="text-primary" />,
-      title: "Profile Information Changed",
-      desc: "Your emergency contact was updated successfully.",
-      time: "3 Days Ago",
-    },
-    {
-      icon: <CheckCircle2 size={18} className="text-primary" />,
-      title: "Health Assessment Complete",
-      desc: "The annual wellness survey has been logged to your records.",
-      time: "Oct 24",
-    },
-  ];
-
-  const metrics = [
-    { icon: <Heart size={24} />, label: "Heart Rate", val: "72", unit: "BPM" },
-    { icon: <Wind size={24} />, label: "Blood Oxygen", val: "98", unit: "%" },
-    {
-      icon: <Activity size={24} />,
-      label: "Blood Pressure",
-      val: "120/80",
-      unit: "mmHg",
-    },
-    {
-      icon: <Footprints size={24} />,
-      label: "Steps Today",
-      val: "8,432",
-      unit: "steps",
-    },
-  ];
 
   // Fetch patient profile + appointments
   useEffect(() => {
@@ -271,7 +223,7 @@ export default function PatientDashboard() {
     const startTimeRaw = appointment.timeSlot.split(" - ")[0];
     const startTime = convertTo24Hour(startTimeRaw);
     // DEBUG: surface backend response to help trace missing reports
-    console.log("fetchReports response:", response.data);
+    //console.log("fetchReports response:", response.data);
 
     const appointmentStart = new Date(`${dateStr}T${startTime}`);
     const now = new Date();
@@ -924,32 +876,6 @@ export default function PatientDashboard() {
             </div>
           </aside>
         </div>
-
-        <section className="mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {metrics.map((m) => (
-              <div
-                key={m.label}
-                className="bg-white p-5 rounded-lg border border-gray-200 flex items-center gap-4 shadow-sm hover:border-primary/20 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                  {React.cloneElement(m.icon, { size: 18 })}
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                    {m.label}
-                  </p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {m.val}{" "}
-                    <span className="text-xs font-medium text-gray-500">
-                      {m.unit}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {selectedAppointment && (
           <AppointmentModal
