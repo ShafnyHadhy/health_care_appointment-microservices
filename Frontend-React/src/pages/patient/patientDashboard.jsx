@@ -48,6 +48,52 @@ export default function PatientDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please log in to access your dashboard');
+      navigate('/login');
+    }
+
+    console.log('Fetching patient profile and appointments with token:', token);
+
+    const fetchPatientProfile = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/patients/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setPatientData(res.data);
+        console.log('Fetched patient profile:', res.data);
+      } catch (error) {
+        console.error('Error fetching patient profile:', error);
+      }
+    };
+
+    const fetchMyAppointments = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/appointments`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        const myAppoints = res.data.data;
+        setMyAppointments(myAppoints);
+        console.log('Fetched appointments:', myAppoints);
+      } catch (error) {
+        toast.error('Failed to fetch appointments');
+        console.error('Error fetching appointments:', error);
+      }
+    }
+
+    fetchPatientProfile();
+    fetchMyAppointments();
+
+  }, []);
+
   const activityItems = [
     {
       icon: <FlaskConical size={18} className="text-primary" />,
@@ -282,6 +328,19 @@ export default function PatientDashboard() {
   };
 
   const canJoin = nextAppointment && canJoinNow(nextAppointment);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    if (!token) {
+      navigate("/login");
+    } else {
+      fetchReports();
+      fetchPrescriptions();
+    }
+  }, [token, navigate]);
 
   const handleDeleteReport = async (fileName) => {
     if (!window.confirm("Are you sure you want to delete this report?")) {
@@ -725,7 +784,7 @@ export default function PatientDashboard() {
           </section>
 
           <aside className="lg:col-span-4">
-            <div className="bg-white border border-gray-200 rounded-xl p-6 h-full shadow-sm max-h-125 overflow-y-auto hover:scrollbar-thin">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 h-full shadow-sm max-h-150 overflow-y-auto hover:scrollbar-thin">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-headline font-semibold text-lg text-gray-900">
                   My Appointments

@@ -33,6 +33,8 @@ export default function BookingModal({ doctor, onClose }) {
       setSlots(res.data.slots);
       setSelectedSlot(null);
 
+      console.log('Fetched slots:', res.data.slots);
+
     } catch (err) {
       console.error(err);
     } finally {
