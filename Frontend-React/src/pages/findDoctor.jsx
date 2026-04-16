@@ -190,19 +190,13 @@ export default function FindDoctor() {
                           {doc.availability}
                         </span>
                       )}
-                      {/* {(doc.tags || []).map((tag, idx) => (
-                        <span key={idx} className="bg-gray-50 px-2 py-0.5 rounded text-[10px] font-medium text-gray-600 flex items-center gap-1 border border-gray-100">
-                          {tag.icon}
-                          {tag.label}
-                        </span>
-                      ))} */}
                     </div>
                   </div>
 
                   <div className="mt-3.5 flex gap-2">
                     <button 
                       onClick={() => handleBookClick(doc)}
-                      className="grow py-2 px-4 rounded-xl font-headline font-bold text-sm bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm"
+                      className="grow py-2 px-4 rounded-lg font-headline font-bold text-sm bg-primary/80 text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
                       <Calendar size={16} />
                       Book Consultation
