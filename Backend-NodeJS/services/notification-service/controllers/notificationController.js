@@ -53,8 +53,11 @@ const getDetails = async (patientId, doctorId) => {
       config
     );
 
-    const patient = pRes.data.data.find((p) => p._id === patientId);
-    const doctor = dRes.data.data.find((d) => d._id === doctorId);
+    const patientList = Array.isArray(pRes.data) ? pRes.data : (pRes.data.data || []);
+    const doctorList = Array.isArray(dRes.data) ? dRes.data : (dRes.data.data || []);
+
+    const patient = patientList.find((p) => p._id === patientId);
+    const doctor = doctorList.find((d) => d._id === doctorId);
 
     return { patient, doctor };
   } catch (err) {
