@@ -48,50 +48,54 @@ export default function PatientDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      toast.error('Please log in to access your dashboard');
-      navigate('/login');
+      toast.error("Please log in to access your dashboard");
+      navigate("/login");
     }
 
-    console.log('Fetching patient profile and appointments with token:', token);
+    console.log("Fetching patient profile and appointments with token:", token);
 
     const fetchPatientProfile = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/patients/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/patients/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
         setPatientData(res.data);
-        console.log('Fetched patient profile:', res.data);
+        console.log("Fetched patient profile:", res.data);
       } catch (error) {
-        console.error('Error fetching patient profile:', error);
+        console.error("Error fetching patient profile:", error);
       }
     };
 
     const fetchMyAppointments = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/appointments`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/appointments`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
         const myAppoints = res.data.data;
         setMyAppointments(myAppoints);
-        console.log('Fetched appointments:', myAppoints);
+        console.log("Fetched appointments:", myAppoints);
       } catch (error) {
-        toast.error('Failed to fetch appointments');
-        console.error('Error fetching appointments:', error);
+        toast.error("Failed to fetch appointments");
+        console.error("Error fetching appointments:", error);
       }
-    }
+    };
 
     fetchPatientProfile();
     fetchMyAppointments();
-
   }, []);
 
   const activityItems = [
@@ -266,6 +270,8 @@ export default function PatientDashboard() {
 
     const startTimeRaw = appointment.timeSlot.split(" - ")[0];
     const startTime = convertTo24Hour(startTimeRaw);
+    // DEBUG: surface backend response to help trace missing reports
+    console.log("fetchReports response:", response.data);
 
     const appointmentStart = new Date(`${dateStr}T${startTime}`);
     const now = new Date();
@@ -348,18 +354,16 @@ export default function PatientDashboard() {
     }
 
     try {
-      const response = await axios.delete(
-        `${API_URL}/api/patients/reports/${fileName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const deleteUrl = `http://localhost:3001/api/patients/reports/${fileName}`;
+      console.log("🗑️ Deleting:", deleteUrl);
+
+      const response = await axios.delete(deleteUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.status === 200) {
         toast.success("Report deleted successfully!");
-        fetchReports(token);
+        fetchReports(); // Refresh the list
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -370,14 +374,38 @@ export default function PatientDashboard() {
   const fetchReports = async (authToken = token) => {
     setLoadingReports(true);
     try {
-      const response = await axios.get(`${API_URL}/api/patients/reports`, {
-        headers: { Authorization: `Bearer ${authToken}` },
+      // ✅ Use direct URL like Postman
+      const url = "http://localhost:3001/api/patients/reports";
+      console.log("🔍 Fetching from:", url);
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
       });
 
-      setReports(response.data.reports || []);
+      console.log("📦 Full response:", response);
+      console.log("📦 Response data:", response.data);
+
+      // ✅ Handle response properly
+      let reportsData = [];
+      if (response.data && Array.isArray(response.data)) {
+        reportsData = response.data;
+      } else if (
+        response.data &&
+        response.data.reports &&
+        Array.isArray(response.data.reports)
+      ) {
+        reportsData = response.data.reports;
+      }
+
+      console.log("✅ Reports count:", reportsData.length);
+      setReports(reportsData);
     } catch (error) {
-      console.error("Error fetching reports:", error);
-      toast.error(error.response?.data?.message || "Failed to load reports");
+      console.error("❌ Error fetching reports:", error);
+      console.error("❌ Error response:", error.response?.data);
+      toast.error("Failed to load reports");
+      setReports([]);
     } finally {
       setLoadingReports(false);
     }
@@ -439,31 +467,41 @@ export default function PatientDashboard() {
     formData.append("report", selectedFile);
 
     try {
-      const response = await axios.post(
-        `${API_URL}/api/patients/reports/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      const uploadUrl = "http://localhost:3001/api/patients/reports/upload";
+
+      const response = await axios.post(uploadUrl, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
+
+      console.log("Upload response:", response.data);
 
       if (response.status === 201) {
         setUploadSuccess(true);
         toast.success("Medical report uploaded successfully!");
         setSelectedFile(null);
-        fetchReports(token);
-
+        await fetchReports(token);
         setTimeout(() => {
           setShowUploadModal(false);
           setUploadSuccess(false);
         }, 2000);
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      toast.error(error.response?.data?.message || "Failed to upload report");
+      console.error("❌ Upload error:", error);
+      console.error("❌ Error response:", error.response?.data);
+
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.");
+        navigate("/login");
+      } else if (error.response?.status === 403) {
+        toast.error("Access denied. Please check your permissions.");
+      } else if (error.response?.status === 404) {
+        toast.error("Upload endpoint not found. Please contact support.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to upload report");
+      }
     } finally {
       setUploading(false);
     }
@@ -698,7 +736,7 @@ export default function PatientDashboard() {
               )}
             </div>
 
-            <div className="mt-8">
+            {/* <div className="mt-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-headline font-semibold text-lg text-gray-900">
                   Recent Prescriptions
@@ -780,7 +818,7 @@ export default function PatientDashboard() {
                   </p>
                 </div>
               )}
-            </div>
+            </div> */}
           </section>
 
           <aside className="lg:col-span-4">
