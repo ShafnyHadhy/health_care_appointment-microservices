@@ -120,7 +120,7 @@ const handleWebhook = async (req, res) => {
                 // OPTIONAL: Notify appointment service
                 try {
                     await axios.put(
-                        `http://localhost:3003/api/appointments/${payment.appointmentId}/payment`,
+                        `${process.env.APPOINTMENT_SERVICE_URL}/api/appointments/${payment.appointmentId}/pay`,
                         { status: 'paid' }
                     );
                 } catch (err) {
@@ -157,7 +157,7 @@ const verifyPayment = async (req, res) => {
         // Notify appointment service
         try {
             await axios.put(
-                `http://localhost:3003/api/appointments/${appointmentId}/payment`,
+                `${process.env.APPOINTMENT_SERVICE_URL}/api/appointments/${appointmentId}/pay`,
                 {},
                 {
                     headers: { Authorization: req.headers.authorization }
