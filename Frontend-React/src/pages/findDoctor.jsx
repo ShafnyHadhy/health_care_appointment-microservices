@@ -165,8 +165,8 @@ export default function FindDoctor() {
           {/* Doctor Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {filteredDoctors.map((doc, i) => (
-              <div key={i} className="bg-white p-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-md flex flex-row items-start gap-4 group border border-gray-200 hover:border-primary/40">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative border border-gray-100 mt-1">
+              <div key={i} className="bg-white p-4 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex flex-row items-start gap-4 group border border-gray-200/80 hover:border-primary/40">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-full overflow-hidden relative bg-gray-100 ring-1 ring-gray-200 mt-1">
                   <img src="/user.png" alt={doc.name} className="w-full h-full object-cover" />
                 </div>
 
@@ -179,22 +179,38 @@ export default function FindDoctor() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-0.5">Consultation Fee</p>
-                        <p className="text-sm font-bold text-gray-900">Rs.{doc.consultationFee}</p>
+                        <span className="inline-flex items-center rounded-full bg-gray-50 px-3 py-1 text-xs font-bold text-gray-900 ring-1 ring-gray-200">
+                          Rs.{doc.consultationFee}
+                        </span>
                       </div>
                     </div>
 
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {doc.availability && (
-                        <span className="bg-green-50 px-2 py-0.5 rounded text-[10px] font-bold text-green-700 flex items-center gap-1 border border-green-100">
+                        <span className="bg-green-50 px-2 py-0.5 rounded-full text-[10px] font-bold text-green-700 flex items-center gap-1 border border-green-100">
                           <Calendar size={10} />
                           {doc.availability}
                         </span>
                       )}
+
+                      {Array.isArray(doc.tags)
+                        ? doc.tags.map((t, idx) => (
+                            <span
+                              key={idx}
+                              className="bg-gray-50 px-2 py-0.5 rounded-full text-[10px] font-semibold text-gray-600 flex items-center gap-1 border border-gray-200"
+                              title={t.label}
+                            >
+                              {t.icon}
+                              <span className="max-w-40 truncate">{t.label}</span>
+                            </span>
+                          ))
+                        : null}
                     </div>
                   </div>
 
                   <div className="mt-3.5 flex gap-2">
                     <button 
+                      type="button"
                       onClick={() => handleBookClick(doc)}
                       className="grow py-2 px-4 rounded-lg font-headline font-bold text-sm bg-primary/80 text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
