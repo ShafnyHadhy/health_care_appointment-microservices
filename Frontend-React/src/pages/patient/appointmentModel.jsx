@@ -39,17 +39,27 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
     try {
       setLoading(true);
 
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/appointments/${appointment._id}/pay`
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/payment/create-checkout-session`,
+        {
+          appointmentId: appointment._id,
+          amount: appointment.consultationFee
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
 
-      toast.success('Payment successful ');
-      refresh();
-      onClose();
+      if (response.data && response.data.url) {
+        // Redirect to the Stripe Checkout page
+        window.location.href = response.data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
 
     } catch (err) {
-      toast.error('Payment failed');
-    } finally {
+      console.error("Payment redirect error:", err);
+      toast.error('Failed to initiate payment session');
       setLoading(false);
     }
   };
