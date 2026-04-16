@@ -10,6 +10,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const twilio = require('twilio');
+
+// Configure Twilio client
+let twilioClient;
+if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+}
+
+// Helper to send SMS
+const sendSMS = async (to, message) => {
+  if (!twilioClient || !process.env.TWILIO_PHONE || !to) return;
+  try {
+    await twilioClient.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE,
+      to,
+    });
+  } catch (err) {
+    console.warn(`Failed to send SMS to ${to}:`, err.message);
+  }
+};
+
 // Helper to fetch details
 const getDetails = async (patientId, doctorId) => {
   try {
@@ -101,6 +123,22 @@ const notifyBooking = async (req, res) => {
       await transporter.sendMail(doctorMailOptions);
     }
 
+    // Send SMS to Patient
+    if (patient.phone) {
+      await sendSMS(
+        patient.phone,
+        `Your appointment with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} is confirmed. Fee: LKR ${consultationFee}.`
+      );
+    }
+
+    // Send SMS to Doctor
+    if (doctor.phone) {
+      await sendSMS(
+        doctor.phone,
+        `New appointment booked with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot}.`
+      );
+    }
+
     res.status(200).json({ message: "Booking notification sent successfully" });
   } catch (error) {
     console.error("Error sending booking notification:", error);
@@ -183,6 +221,22 @@ const notifyCompleted = async (req, res) => {
       await transporter.sendMail(doctorMailOptions);
     }
 
+    // Send SMS to Patient
+    if (patient.phone) {
+      await sendSMS(
+        patient.phone,
+        `Your consultation with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
+      );
+    }
+
+    // Send SMS to Doctor
+    if (doctor.phone) {
+      await sendSMS(
+        doctor.phone,
+        `Your consultation with patient ${patientName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} has been completed.`
+      );
+    }
+
     res
       .status(200)
       .json({
@@ -194,7 +248,46 @@ const notifyCompleted = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Send Login Notification
+ * @route   POST /api/notify/login
+ * @access  Internal
+ */
+const notifyLogin = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required for login notification" });
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Security Alert: Successful Login",
+      html: `
+        <h3>Responsive Alert: Login Successful</h3>
+        <p>Hello,</p>
+        <p>We noticed a successful login to your account recently.</p>
+        <p>Date & Time: ${new Date().toLocaleString()}</p>
+        <p>If this was you, you can ignore this email. If this wasn't you, please secure your account immediately.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    
+    // Optional: send SMS if they eventually pass the phone number here
+    // For now we just send the email
+
+    res.status(200).json({ message: "Login notification sent successfully" });
+  } catch (error) {
+    console.error("Error sending login notification:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
 module.exports = {
   notifyBooking,
   notifyCompleted,
+  notifyLogin,
 };

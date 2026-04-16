@@ -95,17 +95,22 @@ const bookAppointment = async (req, res) => {
 
     // Notify user asynchronously via Notification Service
 
-    // try {
-    //   if (process.env.NOTIFICATION_SERVICE_URL) {
-    //      await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
-    //        appointmentId: appointment._id,
-    //        patientId,
-    //        doctorId
-    //      });
-    //   }
-    // } catch (notifyErr) {
-    //    console.warn('Notification service failed or not implemented yet:', notifyErr.message);
-    // }
+    try {
+      if (process.env.NOTIFICATION_SERVICE_URL) {
+         await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
+           appointmentId: appointment._id,
+           patientId,
+           doctorId,
+           date,
+           timeSlot,
+           doctorName,
+           patientName,
+           consultationFee
+         });
+      }
+    } catch (notifyErr) {
+       console.warn('Notification service failed or not implemented yet:', notifyErr.message);
+    }
 
     res.status(201).json({
       message: 'Appointment booked successfully', data: appointment
@@ -310,19 +315,23 @@ const updateAppointmentStatus = async (req, res) => {
 
     // If marked as completed, trigger completion notification
 
-    // if (status === 'completed') {
-    //   try {
-    //     if (process.env.NOTIFICATION_SERVICE_URL) {
-    //        await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/completed`, {
-    //          appointmentId: appointment._id,
-    //          patientId: appointment.patientId,
-    //          doctorId: appointment.doctorId
-    //        });
-    //     }
-    //   } catch (notifyErr) {
-    //      console.warn('Completed Notification failed/not implemented', notifyErr.message);
-    //   }
-    // }
+    if (status === 'completed') {
+      try {
+        if (process.env.NOTIFICATION_SERVICE_URL) {
+           await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/completed`, {
+             appointmentId: appointment._id,
+             patientId: appointment.patientId,
+             doctorId: appointment.doctorId,
+             date: appointment.date,
+             timeSlot: appointment.timeSlot,
+             doctorName: appointment.doctorName,
+             patientName: appointment.patientName,
+           });
+        }
+      } catch (notifyErr) {
+         console.warn('Completed Notification failed/not implemented', notifyErr.message);
+      }
+    }
 
     res.status(200).json({
       message: 'Appointment status updated successfully',

@@ -1,9 +1,10 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const cors = require('cors');
-const notificationRoutes = require('./routes/notificationRoutes');
 
 dotenv.config();
+
+const cors = require('cors');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
