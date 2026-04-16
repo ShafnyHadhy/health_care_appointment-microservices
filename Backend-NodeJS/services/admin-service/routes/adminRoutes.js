@@ -27,8 +27,13 @@ const { protect, authorize } = require('../middleware/auth');
 // Public route for AI Reports (called by Symptom Checker)
 router.post('/ai-reports/public', saveAiReport);
 
-// Protected Admin routes
+// Protected routes (Admin & Doctor)
 router.use(protect);
+
+// AI Reports (Accessible by both for clinical reasons)
+router.get('/ai-reports', authorize('admin', 'doctor'), getAiReports);
+
+// Strict Admin Only routes
 router.use(authorize('admin'));
 
 router.post('/register', registerAdmin);
@@ -52,7 +57,5 @@ router.get('/actions/notifications', getNotifications);
 router.patch('/actions/notifications/:id/read', markNotificationRead);
 router.post('/actions/chatbot', chatbotAssistant);
 
-// AI Reports
-router.get('/ai-reports', getAiReports);
 
 module.exports = router;

@@ -36,7 +36,8 @@ const seedAdmin = async () => {
             });
             console.log('Admin synced with auth-service successfully!');
         } catch (error) {
-            console.error('Failed to sync with auth-service:', error.message);
+            const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+            console.error('Failed to sync with auth-service:', errorMsg);
             await Admin.findByIdAndDelete(admin._id);
             process.exit(1);
         }

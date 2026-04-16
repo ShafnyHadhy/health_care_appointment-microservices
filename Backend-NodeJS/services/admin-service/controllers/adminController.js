@@ -85,14 +85,28 @@ const getAllUsers = async (req, res) => {
 
         const [patientsRes, doctorsRes] = await Promise.allSettled([
             axios.get(`${PATIENT_SERVICE}/api/patients`, config),
-            axios.get(`${DOCTOR_SERVICE}/api/doctors`, config)
+            axios.get(`${DOCTOR_SERVICE}/api/doctors/appDoc`, config)
         ]);
 
         const patientsRaw = patientsRes.status === 'fulfilled' ? extractArray(patientsRes.value) : [];
         const doctorsRaw = doctorsRes.status === 'fulfilled' ? extractArray(doctorsRes.value) : [];
 
-        const patients = patientsRaw.map((p) => ({ ...p, userType: 'patient' }));
-        const doctors = doctorsRaw.map((d) => ({ ...d, userType: 'doctor' }));
+        // Log states for debugging
+        console.log(`[ADMIN-SERVICE] Fetched ${patientsRaw.length} patients and ${doctorsRaw.length} doctors.`);
+        if (patientsRes.status === 'rejected') console.error('[ADMIN-SERVICE] Patient Service Error:', patientsRes.reason.message);
+        if (doctorsRes.status === 'rejected') console.error('[ADMIN-SERVICE] Doctor Service Error:', doctorsRes.reason.message);
+
+        // Standardize properties for frontend (handle name/fullName/doctorName)
+        const patients = patientsRaw.map((p) => ({ 
+            ...p, 
+            name: p.name || p.fullName || 'Unknown Patient',
+            userType: 'patient' 
+        }));
+        const doctors = doctorsRaw.map((d) => ({ 
+            ...d, 
+            name: d.name || d.fullName || 'Unknown Doctor',
+            userType: 'doctor' 
+        }));
 
         res.status(200).json({
             message: 'Users fetched successfully',
@@ -113,10 +127,14 @@ const getAllAppointments = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
         const response = await axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config);
+        
+        // Robust extraction for appointments
+        const appts = extractArray(response);
+        console.log(`[ADMIN-SERVICE] Fetched ${appts.length} appointments.`);
 
         res.status(200).json({
             message: 'Appointments fetched successfully',
-            data: response.data.data
+            data: appts
         });
     } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -162,7 +180,7 @@ const getDashboardCounts = async (req, res) => {
         // For simplicity, we just make the parallel calls to other services again here
         const [patientsRes, doctorsRes, appointmentsRes] = await Promise.allSettled([
             axios.get(`${PATIENT_SERVICE}/api/patients`, config),
-            axios.get(`${DOCTOR_SERVICE}/api/doctors`, config),
+            axios.get(`${DOCTOR_SERVICE}/api/doctors/appDoc`, config),
             axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config)
         ]);
 
