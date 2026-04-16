@@ -125,18 +125,25 @@ const notifyBooking = async (req, res) => {
       const patientMailOptions = {
         from: process.env.EMAIL_USER,
         to: patient.email,
-        subject: "Appointment Booking Confirmation",
+        subject: "Payment Confirmed - Appointment Scheduled",
         html: `
-          <h3>Booking Confirmed!</h3>
-          <p>Hello ${patientName},</p>
-          <p>Your appointment has been successfully booked and payment is confirmed.</p>
-          <ul>
-            <li><strong>Doctor:</strong> Dr. ${doctorName}</li>
-            <li><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</li>
-            <li><strong>Time:</strong> ${timeSlot}</li>
-            <li><strong>Fee Paid:</strong> LKR ${consultationFee}</li>
-          </ul>
-          <p>Thank you for using our telemedicine platform!</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+            <div style="background-color: #006063; padding: 20px; text-align: center;">
+              <h2 style="color: white; margin: 0;">Payment Successful</h2>
+            </div>
+            <div style="padding: 20px; color: #333;">
+              <p>Hello <strong>${patientName}</strong>,</p>
+              <p>Great news! Your payment for the appointment with <strong>Dr. ${doctorName}</strong> has been received and confirmed.</p>
+              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+                <p style="margin: 5px 0;"><strong>Time:</strong> ${timeSlot}</p>
+                <p style="margin: 5px 0;"><strong>Consultation Fee:</strong> LKR ${consultationFee}</p>
+                <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #2e7d32; font-weight: bold;">CONFIRMED</span></p>
+              </div>
+              <p>You can join the consultation via your dashboard at the scheduled time.</p>
+              <p>Stay healthy,<br/>The CareBridge Team</p>
+            </div>
+          </div>
         `,
       };
       await transporter.sendMail(patientMailOptions);
@@ -163,11 +170,11 @@ const notifyBooking = async (req, res) => {
       await transporter.sendMail(doctorMailOptions);
     }
 
-    // Send SMS to Patient
+    // Send WhatsApp to Patient
     if (patient.phone) {
       await sendSMS(
         patient.phone,
-        `Your appointment with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} is confirmed. Fee: LKR ${consultationFee}.`
+        `Payment confirmed! Your appointment with Dr. ${doctorName} on ${new Date(date).toLocaleDateString()} at ${timeSlot} is now CONFIRMED. Fee: LKR ${consultationFee}.`
       );
     }
 
@@ -181,9 +188,75 @@ const notifyBooking = async (req, res) => {
     }
     */
 
-    res.status(200).json({ message: "Booking notification sent successfully" });
+    res.status(200).json({ message: "Booking confirmation notification sent successfully" });
   } catch (error) {
     console.error("Error sending booking notification:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+/**
+ * @desc    Send Appointment Accepted Notification (Doctor approved, waiting for payment)
+ * @route   POST /api/notify/accepted
+ * @access  Internal
+ */
+const notifyAccepted = async (req, res) => {
+  try {
+    const {
+      appointmentId,
+      patientId,
+      doctorId,
+      date,
+      timeSlot,
+      doctorName,
+      patientName,
+    } = req.body;
+
+    const { patient, doctor } = await getDetails(patientId, doctorId);
+
+    if (!patient || !doctor) {
+      return res.status(404).json({ message: "Patient or Doctor details not found" });
+    }
+
+    // Send email to Patient
+    if (patient.email) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: patient.email,
+        subject: "Appointment Accepted - Payment Required",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+            <div style="background-color: #0288d1; padding: 20px; text-align: center;">
+              <h2 style="color: white; margin: 0;">Appointment Accepted</h2>
+            </div>
+            <div style="padding: 20px; color: #333;">
+              <p>Hello <strong>${patientName}</strong>,</p>
+              <p>Good news! Your appointment request has been <strong>accepted</strong> by <strong>Dr. ${doctorName}</strong>.</p>
+              <p>Please complete your payment to finalize the booking and secure your slot for:</p>
+              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+                <p style="margin: 5px 0;"><strong>Time:</strong> ${timeSlot}</p>
+              </div>
+              <p>To confirm your appointment, please log in to your dashboard and complete the payment.</p>
+              <p>Stay healthy,<br/>The CareBridge Team</p>
+            </div>
+          </div>
+        `,
+      };
+      await transporter.sendMail(mailOptions);
+    }
+
+    // Send WhatsApp to Patient
+    if (patient.phone) {
+      await sendSMS(
+        patient.phone,
+        `Your appointment is accepted by Dr. ${doctorName}! Please complete your payment quickly for ${new Date(date).toLocaleDateString()}. Check your dashboard to pay.`
+      );
+    }
+
+    res.status(200).json({ message: "Acceptance notification sent successfully" });
+  } catch (error) {
+    console.error("Error sending acceptance notification:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -332,6 +405,7 @@ const notifyLogin = async (req, res) => {
 
 module.exports = {
   notifyBooking,
+  notifyAccepted,
   notifyCompleted,
   notifyLogin,
 };

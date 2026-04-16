@@ -93,8 +93,8 @@ const bookAppointment = async (req, res) => {
       isPaid: false
     })
 
-    // Notify user asynchronously via Notification Service
-
+    // Notify user asynchronously via Notification Service (Removed 'pending' notification for cleaner flow)
+    /*
     try {
       if (process.env.NOTIFICATION_SERVICE_URL) {
         await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/booking`, {
@@ -111,6 +111,7 @@ const bookAppointment = async (req, res) => {
     } catch (notifyErr) {
       console.warn('Notification service failed or not implemented yet:', notifyErr.message);
     }
+    */
 
     res.status(201).json({
       message: 'Appointment booked successfully', data: appointment
@@ -314,6 +315,25 @@ const updateAppointmentStatus = async (req, res) => {
     }
 
     await appointment.save();
+
+    // If accepted by doctor, trigger acceptance notification
+    if (status === 'accepted') {
+      try {
+        if (process.env.NOTIFICATION_SERVICE_URL) {
+          await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notify/accepted`, {
+            appointmentId: appointment._id,
+            patientId: appointment.patientId,
+            doctorId: appointment.doctorId,
+            date: appointment.date,
+            timeSlot: appointment.timeSlot,
+            doctorName: appointment.doctorName,
+            patientName: appointment.patientName
+          });
+        }
+      } catch (notifyErr) {
+        console.warn('Acceptance Notification failed:', notifyErr.message);
+      }
+    }
 
     // If marked as completed, trigger completion notification
 
