@@ -39,17 +39,27 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
     try {
       setLoading(true);
 
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/appointments/${appointment._id}/pay`
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/payment/create-checkout-session`,
+        {
+          appointmentId: appointment._id,
+          amount: appointment.consultationFee
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
 
-      toast.success('Payment successful 🎉');
-      refresh();
-      onClose();
+      if (response.data && response.data.url) {
+        // Redirect to the Stripe Checkout page
+        window.location.href = response.data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
 
     } catch (err) {
-      toast.error('Payment failed');
-    } finally {
+      console.error("Payment redirect error:", err);
+      toast.error('Failed to initiate payment session');
       setLoading(false);
     }
   };
@@ -62,8 +72,8 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
         {/* Header Section */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <h2 className="text-base font-bold text-gray-900 font-headline">Appointment Details</h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X size={16} />
@@ -84,22 +94,21 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
                 <p className="text-[11px] font-semibold text-primary uppercase tracking-wide opacity-90">{appointment.specialty || 'General Practitioner'}</p>
               </div>
             </div>
-            
+
             {/* Status Badge */}
-            <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border shrink-0 ${
-              appointment.status === 'accepted' ? 'bg-blue-50 text-blue-700 border-green-100' :
-              appointment.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' :
-              appointment.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
-              appointment.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-              appointment.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
-              'bg-gray-50 text-gray-700 border-gray-200'
-            }`}>
+            <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border shrink-0 ${appointment.status === 'accepted' ? 'bg-blue-50 text-blue-700 border-green-100' :
+                appointment.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' :
+                  appointment.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
+                    appointment.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                      appointment.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
+                        'bg-gray-50 text-gray-700 border-gray-200'
+              }`}>
               {appointment.status}
             </div>
           </div>
 
           <div className="space-y-4">
-            
+
             {/* Time & Date Block */}
             <div className="bg-gray-50/80 p-4 rounded-xl border border-gray-100 flex gap-4">
               <div className="flex-1">
@@ -117,7 +126,7 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
 
             {/* General Details */}
             <div className="border border-gray-100 rounded-xl divide-y divide-gray-100">
-              
+
               <div className="p-4 flex gap-3">
                 <div className="mt-0.5"><ClipboardType size={16} className="text-gray-400" /></div>
                 <div className="min-w-0">
@@ -147,12 +156,12 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
 
           {/* Alert Message for pending/cancelled */}
           {appointment.status === 'pending' && (
-             <div className="mt-5 bg-amber-50 border border-amber-100 rounded-lg p-3 flex gap-2.5 items-start">
-               <AlertCircle size={14} className="text-amber-600 mt-0.5 shrink-0" />
-               <p className="text-[11px] text-amber-800 leading-relaxed">
-                 This appointment is awaiting confirmation from the doctor. You will be notified once it is accepted.
-               </p>
-             </div>
+            <div className="mt-5 bg-amber-50 border border-amber-100 rounded-lg p-3 flex gap-2.5 items-start">
+              <AlertCircle size={14} className="text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                This appointment is awaiting confirmation from the doctor. You will be notified once it is accepted.
+              </p>
+            </div>
           )}
 
         </div>
@@ -174,8 +183,8 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
               onClick={handlePayment}
               disabled={loading || appointment.status === 'pending'} // Prevent payment if pending
               className={`flex-[1.5] py-2.5 rounded-lg text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5
-                ${appointment.status === 'pending' 
-                  ? 'bg-gray-300 cursor-not-allowed shadow-none' 
+                ${appointment.status === 'pending'
+                  ? 'bg-gray-300 cursor-not-allowed shadow-none'
                   : 'bg-primary hover:bg-primary/90 hover:shadow-primary/30 active:scale-[0.98]'
                 }
               `}
@@ -185,7 +194,7 @@ export default function AppointmentModal({ appointment, onClose, refresh }) {
               )}
             </button>
           )}
-          
+
           {/* If everything is done or cancelled, show a close button to fill the space cleanly */}
           {(appointment.status === 'cancelled' || (appointment.isPaid && appointment.status !== 'pending') || appointment.status === 'rejected') && (
             <button
