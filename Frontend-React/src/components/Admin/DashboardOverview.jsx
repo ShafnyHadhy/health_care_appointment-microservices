@@ -13,15 +13,26 @@ export default function DashboardOverview() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const API_URL = import.meta.env.VITE_API_URL;
+    const ensureApi = () => {
+        if (API_URL) return true;
+        toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+        return false;
+    };
+
     useEffect(() => {
         fetchDashboard();
     }, []);
 
     const fetchDashboard = async () => {
+        if (!ensureApi()) {
+            setLoading(false);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const { data } = await axios.get(`${apiUrl}/api/admin/dashboard`, {
+            const { data } = await axios.get(`${API_URL}/api/admin/dashboard`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.data) {

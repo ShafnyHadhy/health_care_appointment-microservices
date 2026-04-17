@@ -18,6 +18,7 @@ import axios from "axios";
 
 export default function PatientRegister() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -68,7 +69,10 @@ export default function PatientRegister() {
     setError("");
 
     try {
-      const API_URL = "http://localhost:3001";
+      if (!API_URL) {
+        setError("API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)");
+        return;
+      }
 
       const response = await axios.post(
         `${API_URL}/api/patients/register`,
@@ -87,7 +91,7 @@ export default function PatientRegister() {
 
       if (response.status === 201) {
         setSuccess(
-          "✅ Patient registered successfully! Please login to continue.",
+          "Patient registered successfully! Please login to continue.",
         );
 
         setFormData({
@@ -112,7 +116,7 @@ export default function PatientRegister() {
         );
       } else if (err.request) {
         setError(
-          "Cannot connect to server. Please check if backend is running on port 3001",
+          "Cannot connect to server. Please check VITE_API_URL and ensure the API Gateway is running.",
         );
       } else {
         setError("An error occurred. Please try again.");

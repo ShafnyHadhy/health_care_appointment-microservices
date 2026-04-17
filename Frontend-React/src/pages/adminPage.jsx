@@ -11,7 +11,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 // ─── CareBridge Brand Config (Homepage Matching) ──────────────────────────────
-const API    = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API = import.meta.env.VITE_API_URL;
 const PRIMARY = '#007B7F'; // Matches homepage primary
 const SECONDARY = '#00B2A9';
 const TERTIARY = '#E2F7F1';
@@ -178,8 +178,18 @@ export default function AdminPage() {
   const addLog = (msg, type='info') =>
     setActivityLog(prev => [{ msg, type, time: new Date() }, ...prev].slice(0,25));
 
+  const ensureApi = () => {
+    if (API) return true;
+    toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+    return false;
+  };
+
   const fetchAll = async () => {
     setLoading(true);
+    if (!ensureApi()) {
+      setLoading(false);
+      return;
+    }
     try {
       const cfg = { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } };
       const [uR, aR, aiR] = await Promise.allSettled([
@@ -200,17 +210,20 @@ export default function AdminPage() {
   };
 
   const handleVerify = async (id, name) => {
+    if (!ensureApi()) return;
     try { await axios.put(`${API}/api/admin/doctors/verify/${id}`, {}, { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } });
       toast.success('Doctor verified successfully!'); addLog(`✓ Verified Dr. ${name}`, 'success'); fetchAll();
     } catch { toast.error('Verification failed.'); }
   };
   const handleReject = async (id, name) => {
+    if (!ensureApi()) return;
     try { await axios.put(`${API}/api/admin/doctors/reject/${id}`, {}, { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } });
       toast.success('Doctor application rejected.'); addLog(`✗ Rejected Dr. ${name}`, 'warn'); fetchAll();
     } catch { toast.error('Action failed.'); }
   };
   const handleDelete = async () => {
     if (!deleteModal) return;
+    if (!ensureApi()) return;
     try {
       await axios.delete(`${API}/api/admin/users/${deleteModal.type}/${deleteModal.id}`, { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } });
       toast.success(`${deleteModal.name} removed from registry.`); addLog(`🗑 Deleted ${deleteModal.name}`, 'danger');
@@ -219,6 +232,7 @@ export default function AdminPage() {
   };
   const handleSaveEdit = async (formData) => {
     if (!editModal) return;
+    if (!ensureApi()) return;
     const cfg = { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } };
     try {
       if (editModal.mode === 'create') {
