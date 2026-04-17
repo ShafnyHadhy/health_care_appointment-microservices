@@ -223,6 +223,9 @@ const notifyAccepted = async (req, res) => {
 
     const formattedDoctorName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`;
 
+    const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const portalUrl = FRONTEND_URL ? `${FRONTEND_URL}/dashboard` : '/dashboard';
+
     // Send email to Patient
     if (patient.email) {
       const mailOptions = {
@@ -247,7 +250,7 @@ const notifyAccepted = async (req, res) => {
               </div>
 
               <div style="text-align: center; margin: 40px 0;">
-                <a href="http://localhost:5173/dashboard" style="background-color: #0288d1; color: white; padding: 16px 32px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 14px; text-transform: uppercase;">Complete Secure Payment</a>
+                <a href="${portalUrl}" style="background-color: #0288d1; color: white; padding: 16px 32px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 14px; text-transform: uppercase;">Complete Secure Payment</a>
               </div>
 
               <p style="font-size: 12px; color: #777;"><em>*Note: This time slot is reserved for you for a limited duration. Please complete the action above to avoid automatic release of the slot.*</em></p>
@@ -263,7 +266,7 @@ const notifyAccepted = async (req, res) => {
       const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       await sendSMS(
         patient.phone,
-        `*CareBridge Health - UPDATE*\n\n🔹 *APPOINTMENT ACCEPTED*\nYour consult with ${formattedDoctorName} for ${formattedDate} is accepted.\n\n*Action Required:* Please complete your payment via the portal to formally SECURE your slot.\n\nPortal: http://localhost:5173/dashboard`
+        `*CareBridge Health - UPDATE*\n\n🔹 *APPOINTMENT ACCEPTED*\nYour consult with ${formattedDoctorName} for ${formattedDate} is accepted.\n\n*Action Required:* Please complete your payment via the portal to formally SECURE your slot.\n\nPortal: ${portalUrl}`
       );
     }
 

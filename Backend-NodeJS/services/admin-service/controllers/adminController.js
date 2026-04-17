@@ -12,10 +12,27 @@ const getAxiosConfig = (req) => {
     };
 };
 
-const PATIENT_SERVICE = process.env.PATIENT_SERVICE_URL || 'http://localhost:3001';
-const DOCTOR_SERVICE = process.env.DOCTOR_SERVICE_URL || 'http://localhost:3002';
-const APPOINTMENT_SERVICE = process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003';
-const AUTH_SERVICE = process.env.AUTH_SERVICE_URL || 'http://localhost:3008';
+const base = (u) => (u || '').replace(/\/$/, '');
+const requireEnvUrl = (name) => {
+    const url = base(process.env[name]);
+    if (!url) throw new Error(`${name} is not set`);
+    return url;
+};
+
+// Many services return either an array directly or { data: [...] }.
+const extractArray = (axiosResponse) => {
+    const payload = axiosResponse?.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+};
+
+// Resolve service URLs lazily so the admin-service can boot even if some env vars are missing.
+// Missing vars will throw only when the corresponding endpoint is invoked.
+const PATIENT_SERVICE = () => requireEnvUrl('PATIENT_SERVICE_URL');
+const DOCTOR_SERVICE = () => requireEnvUrl('DOCTOR_SERVICE_URL');
+const APPOINTMENT_SERVICE = () => requireEnvUrl('APPOINTMENT_SERVICE_URL');
+const AUTH_SERVICE = () => requireEnvUrl('AUTH_SERVICE_URL');
 
 /**
  * @desc    Register Admin
@@ -40,7 +57,7 @@ const registerAdmin = async (req, res) => {
 
         if (admin) {
             try {
-                await axios.post(`${AUTH_SERVICE}/api/auth/register`, {
+                await axios.post(`${AUTH_SERVICE()}/api/auth/register`, {
                     email: admin.email,
                     password: req.body.password,
                     role: 'admin',
@@ -76,16 +93,9 @@ const getAllUsers = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
 
-        const extractArray = (axiosResponse) => {
-            const payload = axiosResponse?.data;
-            if (Array.isArray(payload)) return payload; // many services return array directly
-            if (Array.isArray(payload?.data)) return payload.data; // legacy { data: [...] }
-            return [];
-        };
-
         const [patientsRes, doctorsRes] = await Promise.allSettled([
-            axios.get(`${PATIENT_SERVICE}/api/patients`, config),
-            axios.get(`${DOCTOR_SERVICE}/api/doctors/appDoc`, config)
+            axios.get(`${PATIENT_SERVICE()}/api/patients`, config),
+            axios.get(`${DOCTOR_SERVICE()}/api/doctors/appDoc`, config)
         ]);
 
         const patientsRaw = patientsRes.status === 'fulfilled' ? extractArray(patientsRes.value) : [];
@@ -126,7 +136,7 @@ const getAllUsers = async (req, res) => {
 const getAllAppointments = async (req, res) => {
     try {
         const config = getAxiosConfig(req);
-        const response = await axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config);
+        const response = await axios.get(`${APPOINTMENT_SERVICE()}/api/appointments`, config);
         
         // Robust extraction for appointments
         const appts = extractArray(response);
@@ -153,7 +163,7 @@ const verifyDoctor = async (req, res) => {
         const config = getAxiosConfig(req);
 
         // Call Doctor service to verify
-        const response = await axios.put(`${process.env.DOCTOR_SERVICE_URL}/api/doctors/${id}/verify`, {}, config);
+        const response = await axios.put(`${DOCTOR_SERVICE()}/api/doctors/${id}/verify`, {}, config);
 
         res.status(200).json({
             message: 'Doctor verified successfully',
@@ -179,17 +189,10 @@ const getDashboardCounts = async (req, res) => {
         // We can reuse the routes from above locally or call the other services again
         // For simplicity, we just make the parallel calls to other services again here
         const [patientsRes, doctorsRes, appointmentsRes] = await Promise.allSettled([
-            axios.get(`${PATIENT_SERVICE}/api/patients`, config),
-            axios.get(`${DOCTOR_SERVICE}/api/doctors/appDoc`, config),
-            axios.get(`${APPOINTMENT_SERVICE}/api/appointments`, config)
+            axios.get(`${PATIENT_SERVICE()}/api/patients`, config),
+            axios.get(`${DOCTOR_SERVICE()}/api/doctors/appDoc`, config),
+            axios.get(`${APPOINTMENT_SERVICE()}/api/appointments`, config)
         ]);
-
-        const extractArray = (axiosResponse) => {
-            const payload = axiosResponse?.data;
-            if (Array.isArray(payload)) return payload;
-            if (Array.isArray(payload?.data)) return payload.data;
-            return [];
-        };
 
         const patients = patientsRes.status === 'fulfilled' ? extractArray(patientsRes.value) : [];
         const doctors = doctorsRes.status === 'fulfilled' ? extractArray(doctorsRes.value) : [];
@@ -272,9 +275,9 @@ const deleteUser = async (req, res) => {
         const config = getAxiosConfig(req);
         
         if (type === 'patient') {
-            await axios.delete(`${PATIENT_SERVICE}/api/patients/${id}`, config);
+            await axios.delete(`${PATIENT_SERVICE()}/api/patients/${id}`, config);
         } else if (type === 'doctor') {
-            await axios.delete(`${DOCTOR_SERVICE}/api/doctors/${id}`, config);
+            await axios.delete(`${DOCTOR_SERVICE()}/api/doctors/${id}`, config);
         } else {
             return res.status(400).json({ message: 'Invalid user type' });
         }
@@ -298,9 +301,9 @@ const updateUser = async (req, res) => {
         const config = getAxiosConfig(req);
         
         if (type === 'patient') {
-            await axios.put(`${PATIENT_SERVICE}/api/patients/${id}`, req.body, config);
+            await axios.put(`${PATIENT_SERVICE()}/api/patients/${id}`, req.body, config);
         } else if (type === 'doctor') {
-            await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}`, req.body, config);
+            await axios.put(`${DOCTOR_SERVICE()}/api/doctors/${id}`, req.body, config);
         } else {
             return res.status(400).json({ message: 'Invalid user type' });
         }
@@ -324,7 +327,7 @@ const rejectDoctor = async (req, res) => {
         const config = getAxiosConfig(req);
         
         // Send rejection status to Doctor service
-        await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}`, { isVerified: false, status: 'rejected' }, config);
+        await axios.put(`${DOCTOR_SERVICE()}/api/doctors/${id}`, { isVerified: false, status: 'rejected' }, config);
 
         res.status(200).json({ message: 'Doctor application rejected successfully' });
     } catch (error) {

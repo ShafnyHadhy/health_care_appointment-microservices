@@ -113,7 +113,7 @@ export default function FindDoctor() {
             <div className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Specialty</h3>
               <div className="space-y-2">
-                {['All', 'Cardiology', 'Pediatrics', 'Dermatology', 'Neurology', 'Psychiatry', 'Orthopedics', 'Ophthalmology', 'Gastroenterology'].map((spec) => (
+                {['All', 'Cardiologist', 'Pediatrician', 'Dermatologist', 'Neurologist', 'Psychiatrist', 'Orthopedic', 'Ophthalmology', 'Gastroenterology'].map((spec) => (
                   <label key={spec} className="flex items-center group cursor-pointer" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="radio" 
