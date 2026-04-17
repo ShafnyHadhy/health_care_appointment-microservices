@@ -1,10 +1,12 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // ─── Initialize Gemini ─────────────────────────────────────────────────────────
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+const apiKey = process.env.GEMINI_API_KEY || '';
+const maskedKey = apiKey.length > 4 ? `...${apiKey.slice(-4)}` : 'MISSING';
+const genAI = new GoogleGenerativeAI(apiKey);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-console.log('[AI SERVICE] 🚀 Initialization: Gemini 1.5 Flash Enabled (v1.0.2 Smart Fallback)');
+console.log(`[AI SERVICE] 🚀 Initialization: Gemini 1.5 Flash (Active Key: ${maskedKey})`);
 
 // ─── Clinical Prompt Builder ───────────────────────────────────────────────────
 const buildPrompt = (symptoms) => `
@@ -120,23 +122,44 @@ const analyzeSymptoms = async (req, res) => {
 
         console.log(`[AI SERVICE] 🔍 Analyzing: ${symptoms.join(', ')}`);
         
-        if (!process.env.GEMINI_API_KEY) {
-             console.error('[AI SERVICE] ❌ Quota/Key Error: Falling back to internal clinical logic.');
+        const prompt = buildPrompt(symptoms);
+
+        // ─── Promise.race for Hard Timeout (10s) ───────────────────────────────────
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('AI_TIMEOUT_REACHED')), 10000)
+        );
+
+        let result;
+        try {
+            // Race the AI call against a 10s timer
+            result = await Promise.race([
+                model.generateContent(prompt),
+                timeoutPromise
+            ]);
+        } catch (error) {
+            if (error.message === 'AI_TIMEOUT_REACHED') {
+                console.error('[AI SERVICE] ⏱️ AI Call Timed Out (10s). Switching to fallback.');
+            } else if (error.message.includes('429')) {
+                console.error('[AI SERVICE] ⚠️ Quota Exceeded (429). Switching to internal clinical logic.');
+            } else {
+                console.error('[AI SERVICE] ❌ Gemini Error:', error.message);
+            }
+            return res.status(200).json({ success: true, data: fallbackAnalysis(symptoms) });
         }
 
-        const prompt = buildPrompt(symptoms);
-        const result = await model.generateContent(prompt);
         const rawText = result.response.text().trim();
+        console.log('[AI SERVICE] ✅ AI Analysis Successful');
 
         // Robust parsing: extract content between first { and last }
         let aiData;
         try {
             const jsonStart = rawText.indexOf('{');
             const jsonEnd = rawText.lastIndexOf('}') + 1;
+            if (jsonStart === -1 || jsonEnd === 0) throw new Error('No JSON found');
             const cleanJson = rawText.substring(jsonStart, jsonEnd);
             aiData = JSON.parse(cleanJson);
         } catch (parseError) {
-            console.error('[AI SERVICE] ⚠️ Parse failed. Raw response:', rawText);
+            console.error('[AI SERVICE] ⚠️ Parse failed. Raw response:', rawText.substring(0, 50) + '...');
             return res.status(200).json({ success: true, data: fallbackAnalysis(symptoms) });
         }
 

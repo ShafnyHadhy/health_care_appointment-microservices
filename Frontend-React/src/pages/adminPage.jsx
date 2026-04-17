@@ -203,7 +203,10 @@ export default function AdminPage() {
   const handleVerify = async (id, name) => {
     try { await axios.put(`${API}/api/admin/doctors/verify/${id}`, {}, { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } });
       toast.success('Doctor verified successfully!'); addLog(`✓ Verified Dr. ${name}`, 'success'); fetchAll();
-    } catch { toast.error('Verification failed.'); }
+    } catch (e) { 
+      toast.error(e.response?.data?.message || 'Verification failed.'); 
+      console.error('Verification error:', e);
+    }
   };
   const handleReject = async (id, name) => {
     try { await axios.put(`${API}/api/admin/doctors/reject/${id}`, {}, { headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` } });

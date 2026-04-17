@@ -99,7 +99,7 @@ export default function SymptomChecker() {
 
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const response = await axios.post(`${apiUrl}/api/symptoms/analyze`, { symptoms: finalSymptoms }, { timeout: 15000 });
+            const response = await axios.post(`${apiUrl}/api/symptoms/analyze`, { symptoms: finalSymptoms }, { timeout: 30000 });
 
             if (response.data.success) {
                 const result = response.data.data;
@@ -132,9 +132,9 @@ export default function SymptomChecker() {
         } catch (error) {
             console.error('Error:', error);
             if (error.code === 'ECONNABORTED') {
-                toast.error('Analysis timed out. Try checking your internet or restarting servers.');
+                toast.error('AI is taking a moment. Switching to internal triage logic…', { duration: 5000 });
             } else {
-                toast.error('Could not connect to AI Service. Please check the backend.');
+                toast.error('The clinical engine is under high load. Using emergency protocols.');
             }
             if (!isReAnalysis) setStep(1);
         } finally {

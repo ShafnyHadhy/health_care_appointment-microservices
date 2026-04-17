@@ -153,7 +153,7 @@ const verifyDoctor = async (req, res) => {
         const config = getAxiosConfig(req);
 
         // Call Doctor service to verify
-        const response = await axios.put(`${process.env.DOCTOR_SERVICE_URL}/api/doctors/${id}/verify`, {}, config);
+        const response = await axios.put(`${DOCTOR_SERVICE}/api/doctors/${id}/verify`, {}, config);
 
         res.status(200).json({
             message: 'Doctor verified successfully',
