@@ -9,6 +9,7 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
 
 // ─── CareBridge Brand Config (Homepage Matching) ──────────────────────────────
 const API    = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -308,13 +309,45 @@ export default function AdminPage() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers,...rows]), 'Report');
     XLSX.writeFile(wb, filename+'.xlsx'); toast.success('XLSX Exported Successfully');
   };
-  const exportPDF = (title, headers, rows) => {
-    const doc = new jsPDF();
-    doc.setFontSize(22); doc.setTextColor(0,123,127); doc.text('CareBridge', 14, 22);
-    doc.setFontSize(12); doc.setTextColor(73,69,79); doc.text(`${title}`, 14, 32);
-    doc.setFontSize(9); doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 38);
-    autoTable(doc, { startY:44, head:[headers], body:rows, styles:{fontSize:9,cellPadding:5}, headStyles:{fillColor:[0,123,127],textColor:255,fontStyle:'bold'}, alternateRowStyles:{fillColor:[244,255,251]} });
-    doc.save(title.replace(/\s+/g,'_')+'.pdf'); toast.success('PDF Exported Successfully');
+  const exportPDF = async (title, headers, rows) => {
+    toast.loading('Generating detailed PDF report...', { id: 'pdf-toast' });
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      doc.setFontSize(22); doc.setTextColor(0,123,127); doc.text('CareBridge Analytics', 14, 22);
+      doc.setFontSize(14); doc.setTextColor(73,69,79); doc.text(`${title}`, 14, 32);
+      doc.setFontSize(10); doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 38);
+      
+      let startY = 46;
+
+      // Try capturing charts
+      const chartsEl = document.getElementById('report-charts');
+      if (chartsEl) {
+        const canvas = await html2canvas(chartsEl, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Calculate image dimensions to fit A4 width (maintain aspect ratio)
+        const pdfWidth = doc.internal.pageSize.getWidth() - 28; // 14mm margins
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        doc.addImage(imgData, 'PNG', 14, startY, pdfWidth, pdfHeight);
+        startY += pdfHeight + 15; // Push table below charts
+      }
+
+      autoTable(doc, { 
+        startY: startY, 
+        head: [headers], 
+        body: rows, 
+        styles: { fontSize: 9, cellPadding: 5 }, 
+        headStyles: { fillColor: [0, 123, 127], textColor: 255, fontStyle: 'bold' }, 
+        alternateRowStyles: { fillColor: [244, 255, 251] } 
+      });
+      
+      doc.save(title.replace(/\s+/g,'_')+'.pdf'); 
+      toast.success('PDF Exported Successfully', { id: 'pdf-toast' });
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to generate PDF', { id: 'pdf-toast' });
+    }
   };
 
   // ── Render: Dashboard ─────────────────────────────────────────────────────
@@ -541,7 +574,7 @@ export default function AdminPage() {
           </div>
         </Card>
 
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:GAP }}>
+        <div id="report-charts" style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:GAP }}>
           <Card title="Growth Analytics Overview">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={monthlyData} margin={{ top:0, right:10, left:-20, bottom:0 }} barSize={12}>
