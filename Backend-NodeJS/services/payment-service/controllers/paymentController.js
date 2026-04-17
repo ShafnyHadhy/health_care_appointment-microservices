@@ -42,6 +42,11 @@ const createCheckoutSession = async (req, res) => {
         }
         // --------------------------
 
+        const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+        if (!FRONTEND_URL) {
+            return res.status(500).json({ message: 'FRONTEND_URL is not set (required for Stripe redirects)' });
+        }
+
         // Create Stripe session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -58,8 +63,8 @@ const createCheckoutSession = async (req, res) => {
                     quantity: 1,
                 },
             ],
-            success_url: `http://localhost:5173/payment-status/${appointmentId}`,
-            cancel_url: `http://localhost:5173/cancel`,
+            success_url: `${FRONTEND_URL}/payment-status/${appointmentId}`,
+            cancel_url: `${FRONTEND_URL}/cancel`,
         });
 
         // Save to DB

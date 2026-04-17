@@ -1,0 +1,138 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: carebridge-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build:
+      context: ./Backend-NodeJS/services/auth-service
+    env_file:
+      - ./Backend-NodeJS/services/auth-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  patient-service:
+    build:
+      context: ./Backend-NodeJS/services/patient-service
+    env_file:
+      - ./Backend-NodeJS/services/patient-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - patient_uploads:/app/uploads
+
+  doctor-service:
+    build:
+      context: ./Backend-NodeJS/services/doctor-service
+    env_file:
+      - ./Backend-NodeJS/services/doctor-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  appointment-service:
+    build:
+      context: ./Backend-NodeJS/services/appointment-service
+    env_file:
+      - ./Backend-NodeJS/services/appointment-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ./Backend-NodeJS/services/notification-service
+    env_file:
+      - ./Backend-NodeJS/services/notification-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: ./Backend-NodeJS/services/payment-service
+    env_file:
+      - ./Backend-NodeJS/services/payment-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  telemedicine-service:
+    build:
+      context: ./Backend-NodeJS/services/telemedicine-service
+    env_file:
+      - ./Backend-NodeJS/services/telemedicine-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - telemedicine_recordings:/app/recordings
+
+  admin-service:
+    build:
+      context: ./Backend-NodeJS/services/admin-service
+    env_file:
+      - ./Backend-NodeJS/services/admin-service/.env.docker
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  ai-symptom-checker:
+    build:
+      context: ./Backend-NodeJS/services/AI-symptom-checker
+    env_file:
+      - ./Backend-NodeJS/services/AI-symptom-checker/.env.docker
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./Backend-NodeJS/api-gateway
+    env_file:
+      - ./Backend-NodeJS/api-gateway/.env.docker
+    restart: unless-stopped
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - notification-service
+      - payment-service
+      - admin-service
+      - telemedicine-service
+      - ai-symptom-checker
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ./Frontend-React
+    env_file:
+      - ./Frontend-React/.env.docker
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    ports:
+      - "5173:5173"
+
+volumes:
+  mongo_data:
+  patient_uploads:
+  telemedicine_recordings:

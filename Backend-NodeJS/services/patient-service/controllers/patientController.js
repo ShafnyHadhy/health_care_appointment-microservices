@@ -3,6 +3,15 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
+const base = (u) => (u || "").replace(/\/$/, "");
+const requireEnvUrl = (name) => {
+  const url = base(process.env[name]);
+  if (!url) {
+    throw new Error(`${name} is not set`);
+  }
+  return url;
+};
+
 /**
  * @desc    Register a new patient
  * @route   POST /api/patients/register
@@ -29,7 +38,8 @@ const registerPatient = async (req, res) => {
 
     if (patient) {
       try {
-        await axios.post("http://localhost:3008/api/auth/register", {
+        const AUTH_SERVICE_URL = requireEnvUrl("AUTH_SERVICE_URL");
+        await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, {
           email: patient.email,
           password: req.body.password,
           role: "patient",
@@ -37,9 +47,14 @@ const registerPatient = async (req, res) => {
         });
       } catch (authError) {
         await Patient.findByIdAndDelete(patient._id);
+        const details =
+          authError?.response?.data?.message ||
+          authError?.response?.data?.error ||
+          authError?.response?.data ||
+          authError.message;
         return res.status(500).json({
           message: "Failed to create auth credentials",
-          error: authError.message,
+          error: details,
         });
       }
 
@@ -232,9 +247,8 @@ const deletePatient = async (req, res) => {
 
     // Also delete from auth service
     try {
-      await axios.delete(
-        `http://localhost:3008/api/auth/user/${req.params.id}`,
-      );
+      const AUTH_SERVICE_URL = requireEnvUrl("AUTH_SERVICE_URL");
+      await axios.delete(`${AUTH_SERVICE_URL}/api/auth/user/${req.params.id}`);
     } catch (authError) {
       console.error("Failed to delete auth records:", authError.message);
     }
@@ -393,8 +407,16 @@ const getMyPrescriptions = async (req, res) => {
     }
 
     // Call doctor service to get prescriptions
+    const DOCTOR_SERVICE_URL = base(process.env.DOCTOR_SERVICE_URL);
+    if (!DOCTOR_SERVICE_URL) {
+      return res.json({
+        success: true,
+        count: 0,
+        prescriptions: [],
+      });
+    }
     const response = await axios.get(
-      `http://localhost:3002/api/doctors/patients/${patient._id}/prescriptions`,
+      `${DOCTOR_SERVICE_URL}/api/doctors/patients/${patient._id}/prescriptions`,
       { headers: { Authorization: req.headers.authorization } },
     );
 

@@ -8,15 +8,26 @@ export default function UsersManager() {
     const [filter, setFilter] = useState('all'); // all, patient, doctor
     const [search, setSearch] = useState('');
 
+    const API_URL = import.meta.env.VITE_API_URL;
+    const ensureApi = () => {
+        if (API_URL) return true;
+        toast.error('API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)');
+        return false;
+    };
+
     useEffect(() => {
         fetchUsers();
     }, []);
 
     const fetchUsers = async () => {
+        if (!ensureApi()) {
+            setLoading(false);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const { data } = await axios.get(`${apiUrl}/api/admin/users`, {
+            const { data } = await axios.get(`${API_URL}/api/admin/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data?.data?.all) {
@@ -32,11 +43,11 @@ export default function UsersManager() {
 
     const handleDelete = async (id, type) => {
         if (!window.confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) return;
+        if (!ensureApi()) return;
 
         try {
             const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            await axios.delete(`${apiUrl}/api/admin/users/${type}/${id}`, {
+            await axios.delete(`${API_URL}/api/admin/users/${type}/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success(`${type} deleted successfully`);

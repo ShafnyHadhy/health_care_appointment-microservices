@@ -37,6 +37,7 @@ import {
 
 export default function PrescriptionManagerPage() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("new");
@@ -94,22 +95,30 @@ export default function PrescriptionManagerPage() {
         navigate("/login");
       }
     }
+
     if (!token) {
       navigate("/login");
-    } else {
-      Promise.all([
-        fetchPatients(),
-        fetchCurrentDoctor(),
-        fetchPrescriptions(),
-      ]).finally(() => setPageLoading(false));
+      return;
     }
-  }, [token, navigate]);
+
+    if (!API_URL) {
+      toast.error(
+        "API Gateway URL is missing. Set VITE_API_URL (e.g., http://localhost:5000)",
+      );
+      setPageLoading(false);
+      return;
+    }
+
+    Promise.all([fetchPatients(), fetchCurrentDoctor(), fetchPrescriptions()])
+      .catch(() => {})
+      .finally(() => setPageLoading(false));
+  }, [token, navigate, API_URL]);
 
   // ✅ Fixed fetchPatients - safely handle response
   const fetchPatients = async () => {
     try {
       const response = await axios
-        .get("http://localhost:3001/api/patients", {
+        .get(`${API_URL}/api/patients`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -133,7 +142,7 @@ export default function PrescriptionManagerPage() {
   const fetchCurrentDoctor = async () => {
     try {
       const response = await axios
-        .get("http://localhost:3002/api/doctors/profile", {
+        .get(`${API_URL}/api/doctors/profile`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -149,7 +158,7 @@ export default function PrescriptionManagerPage() {
     setLoading(true);
     try {
       const response = await axios
-        .get("http://localhost:3002/api/doctors/prescriptions", {
+        .get(`${API_URL}/api/doctors/prescriptions`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000,
         })
@@ -173,7 +182,7 @@ export default function PrescriptionManagerPage() {
 
     try {
       await axios.delete(
-        `http://localhost:3002/api/doctors/prescriptions/${prescriptionId}`,
+        `${API_URL}/api/doctors/prescriptions/${prescriptionId}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       toast.success("Prescription deleted successfully!");
@@ -192,7 +201,7 @@ export default function PrescriptionManagerPage() {
     setLoading(true);
     try {
       const response = await axios.put(
-        `http://localhost:3002/api/doctors/prescriptions/${editForm._id}`,
+        `${API_URL}/api/doctors/prescriptions/${editForm._id}`,
         {
           medications: editForm.medications,
           notes: editForm.notes,
@@ -292,7 +301,7 @@ export default function PrescriptionManagerPage() {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:3002/api/doctors/prescriptions",
+        `${API_URL}/api/doctors/prescriptions`,
         {
           patientId: prescriptionForm.patientId,
           medications: prescriptionForm.medications.filter((m) =>
@@ -384,7 +393,7 @@ export default function PrescriptionManagerPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 text-white">
+          <div className="bg-linear-to-r from-teal-600 to-teal-700 px-6 py-4 text-white">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <Pill size={28} />
@@ -803,7 +812,7 @@ export default function PrescriptionManagerPage() {
       {showDetailsModal && selectedPrescription && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center">
+            <div className="sticky top-0 bg-linear-to-r from-teal-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 {isEditing ? <Edit2 size={24} /> : <Pill size={24} />}
                 <h2 className="text-xl font-bold">

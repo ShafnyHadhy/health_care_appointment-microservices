@@ -5,9 +5,16 @@ const Admin = require('../models/Admin');
 
 dotenv.config({ path: '../.env' }); // Make sure it reads the correct env file
 
+const base = (u) => (u || '').replace(/\/$/, '');
+const requireEnv = (name) => {
+    const v = process.env[name];
+    if (!v) throw new Error(`${name} is not set`);
+    return v;
+};
+
 const seedAdmin = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/admindb', {
+        await mongoose.connect(requireEnv('MONGO_URI'), {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
@@ -28,7 +35,8 @@ const seedAdmin = async () => {
         console.log('Admin created in admindb.');
 
         try {
-            await axios.post('http://localhost:3008/api/auth/register', {
+            const AUTH_SERVICE_URL = base(requireEnv('AUTH_SERVICE_URL'));
+            await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, {
                 email: admin.email,
                 password: 'securepassword123',
                 role: 'admin',

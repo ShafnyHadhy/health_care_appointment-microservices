@@ -3,6 +3,15 @@ const Prescription = require("../models/Prescription");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 
+const base = (u) => (u || "").replace(/\/$/, "");
+const requireEnvUrl = (name) => {
+  const url = base(process.env[name]);
+  if (!url) {
+    throw new Error(`${name} is not set`);
+  }
+  return url;
+};
+
 // Register new doctor
 const registerDoctor = async (req, res) => {
   try {
@@ -26,7 +35,8 @@ const registerDoctor = async (req, res) => {
 
     if (doctor) {
       try {
-        await axios.post("http://localhost:3008/api/auth/register", {
+        const AUTH_SERVICE_URL = requireEnvUrl("AUTH_SERVICE_URL");
+        await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, {
           email: doctor.email,
           password: req.body.password,
           role: "doctor",
@@ -182,8 +192,9 @@ const acceptOrRejectAppointment = async (req, res) => {
     const { status } = req.body;
     const appointmentId = req.params.id;
 
+    const APPOINTMENT_SERVICE_URL = requireEnvUrl("APPOINTMENT_SERVICE_URL");
     const response = await axios.put(
-      `http://localhost:3003/api/appointments/${appointmentId}/status`,
+      `${APPOINTMENT_SERVICE_URL}/api/appointments/${appointmentId}/status`,
       { status, doctorId: req.user.id },
       { headers: { Authorization: req.headers.authorization } },
     );
@@ -230,8 +241,9 @@ const viewPatientReports = async (req, res) => {
   try {
     const patientId = req.params.id;
 
+    const PATIENT_SERVICE_URL = requireEnvUrl("PATIENT_SERVICE_URL");
     const response = await axios.get(
-      `http://localhost:3001/api/patients/patients/${patientId}/medical-reports`,
+      `${PATIENT_SERVICE_URL}/api/patients/patients/${patientId}/medical-reports`,
       { headers: { Authorization: req.headers.authorization } },
     );
 
