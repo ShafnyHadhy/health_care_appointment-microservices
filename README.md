@@ -75,6 +75,7 @@ Before you begin, ensure you have the following installed:
 - **npm** or **yarn** - Comes with Node.js
 - **MongoDB** (v6.0 or higher) - [Download](https://www.mongodb.com/try/download/community)
   - Or use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (cloud database)
+- **Docker Desktop** (optional, recommended for running the full stack with Compose)
 - **Git** - [Download](https://git-scm.com/)
 
 ### Verify Installation
@@ -143,77 +144,71 @@ cd ..
 
 ### 3. Configure Environment Variables
 
-Create `.env` files in each service directory with required configuration:
+This repo supports two run modes:
 
-**Backend-NodeJS/api-gateway/.env**
-```env
-PORT=5000
-NODE_ENV=development
-```
+1) **Local dev** (run services with `node server.js` / `npm run dev`)
+- Create a `.env` file in each service directory by copying from its `.env.example`.
+- Use `mongodb://localhost:27017/...` and `http://localhost:<port>` for service URLs.
 
-**Backend-NodeJS/services/auth-service/.env**
-```env
-PORT=3008
-MONGODB_URI=mongodb://localhost:27017/healthcare_auth
-JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRY=7d
-```
+2) **Docker Compose** (run everything with `docker compose`)
+- Create a `.env.docker` file in each service directory by copying from its `.env.example`.
+- Use Compose DNS names for service URLs (NOT `localhost`), e.g. `http://auth-service:3008`.
+- For Mongo, use `mongodb://mongo:27017/...`.
 
-**Backend-NodeJS/services/patient-service/.env**
-```env
-PORT=3001
-MONGODB_URI=mongodb://localhost:27017/healthcare_patients
-JWT_SECRET=your_jwt_secret_key_here
-```
+Notes:
+- Prefer `MONGO_URI` (some services also accept `MONGODB_URI` for compatibility).
+- `JWT_SECRET` should be consistent across services.
 
-**Backend-NodeJS/services/doctor-service/.env**
-```env
-PORT=3002
-MONGODB_URI=mongodb://localhost:27017/healthcare_doctors
-JWT_SECRET=your_jwt_secret_key_here
-```
-
-**Backend-NodeJS/services/appointment-service/.env**
-```env
-PORT=3003
-MONGODB_URI=mongodb://localhost:27017/healthcare_appointments
-JWT_SECRET=your_jwt_secret_key_here
-```
-
-**Backend-NodeJS/services/notification-service/.env**
-```env
-PORT=3004
-MONGODB_URI=mongodb://localhost:27017/healthcare_notifications
-```
-
-**Backend-NodeJS/services/payment-service/.env**
-```env
-PORT=3005
-MONGODB_URI=mongodb://localhost:27017/healthcare_payments
-JWT_SECRET=your_jwt_secret_key_here
-PAYMENT_API_KEY=your_payment_gateway_key
-```
-
-**Backend-NodeJS/services/admin-service/.env**
-```env
-PORT=3006
-MONGODB_URI=mongodb://localhost:27017/healthcare_admin
-JWT_SECRET=your_jwt_secret_key_here
-```
-
-**Backend-NodeJS/services/telemedicine-service/.env**
-```env
-PORT=3007
-MONGODB_URI=mongodb://localhost:27017/healthcare_telemedicine
-JWT_SECRET=your_jwt_secret_key_here
-```
-
-**Frontend-React/.env**
-```env
-VITE_API_URL=http://localhost:5000
-```
+Frontend config:
+- [Frontend-React/.env.example](./Frontend-React/.env.example) shows the required `VITE_API_URL`.
+- For local + Docker Compose on your machine, the frontend typically uses:
+  `VITE_API_URL=http://localhost:5000`
 
 ## Running the Application
+
+### Option 0: Run All Services with Docker Compose (Recommended)
+
+From the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+Check status:
+
+```bash
+docker compose ps
+```
+
+Stop everything (keeps volumes/data):
+
+```bash
+docker compose down
+```
+
+Stop and wipe volumes (you will need to re-register users):
+
+```bash
+docker compose down -v
+```
+
+URLs:
+- Frontend: http://localhost:5173
+- API Gateway: http://localhost:5000
+
+Compose service names (as defined in [docker-compose.yml](./docker-compose.yml)):
+- mongo
+- auth-service
+- patient-service
+- doctor-service
+- appointment-service
+- notification-service
+- payment-service
+- telemedicine-service
+- admin-service
+- ai-symptom-checker
+- api-gateway
+- frontend
 
 ### Option 1: Run Services Individually (Development)
 
@@ -234,7 +229,7 @@ sudo systemctl start mongod
 
 ```bash
 cd Backend-NodeJS/api-gateway
-npm node server.js
+node server.js
 # Gateway running on http://localhost:5000
 ```
 
@@ -267,7 +262,7 @@ npm run dev
 ### Option 2: Run All Services with Docker Compose (Recommended for Production)
 
 ```bash
-docker-compose up -d
+docker compose up -d --build
 ```
 
 See [docker-compose.yml](./docker-compose.yml) for configuration.
