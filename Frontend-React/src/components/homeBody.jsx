@@ -11,7 +11,7 @@ export default function HomeBody() {
     
     <main className="font-body bg-neutral">
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-8 pb-16 md:pt-12 md:pb-24 px-4 sm:px-6">
+      <section className="relative overflow-hidden pt-8 pb-16 md:pt-20 md:pb-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7 flex flex-col items-start">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary-fixed/30 text-on-secondary-fixed-variant rounded-md font-label text-[10px] md:text-xs font-bold mb-4 md:mb-6 tracking-wide uppercase">
