@@ -47,7 +47,7 @@ const createCheckoutSession = async (req, res) => {
                         product_data: {
                             name: 'Doctor Appointment Payment',
                         },
-                        unit_amount: amount * 100, // Stripe uses cents
+                        unit_amount: amount * 100,
                     },
                     quantity: 1,
                 },
@@ -77,11 +77,7 @@ const createCheckoutSession = async (req, res) => {
     }
 };
 
-/**
- * @desc    Handle Stripe Webhook
- * @route   POST /api/payment/webhook
- * @access  Public
- */
+
 const handleWebhook = async (req, res) => {
     const sig = req.headers['stripe-signature'];
 
