@@ -394,7 +394,6 @@ const notifyCompleted = async (req, res) => {
 /**
  * @desc    Send Login Notification
  * @route   POST /api/notify/login
- * @access  Internal
  */
 const notifyLogin = async (req, res) => {
   try {
