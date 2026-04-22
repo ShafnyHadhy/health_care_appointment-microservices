@@ -248,7 +248,6 @@ const notifyBooking = async (req, res) => {
 /**
  * @desc    Send Appointment Accepted Notification (Doctor approved, waiting for payment)
  * @route   POST /api/notify/accepted
- * @access  Internal
  */
 const notifyAccepted = async (req, res) => {
   try {
