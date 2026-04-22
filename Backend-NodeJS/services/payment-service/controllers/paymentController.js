@@ -9,11 +9,7 @@ try {
     console.warn('Stripe key not found, Stripe features will fail');
 }
 
-/**
- * @desc    Create Stripe checkout session
- * @route   POST /api/payment/create-checkout-session
- * @access  Private
- */
+
 const createCheckoutSession = async (req, res) => {
     try {
         const { appointmentId, amount } = req.body;
@@ -22,7 +18,6 @@ const createCheckoutSession = async (req, res) => {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // --- DEVELOPMENT BYPASS ---
         // Automatically bypass Stripe if we don't have a real API key configured
         if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('...')) {
             console.log('Using Payment Mock (No Stripe Key)');
@@ -31,16 +26,15 @@ const createCheckoutSession = async (req, res) => {
                 patientId: req.user.id,
                 stripeSessionId: 'mock_session_' + Date.now(),
                 amount,
-                status: 'completed', // Auto-complete in mock mode for teammate flow
+                status: 'completed',
             });
 
             return res.status(200).json({
-                url: `/payment-status/${appointmentId}`, // local redirect
+                url: `/payment-status/${appointmentId}`,
                 sessionId: payment.stripeSessionId,
                 payment,
             });
         }
-        // --------------------------
 
         // Create Stripe session
         const session = await stripe.checkout.sessions.create({
@@ -167,9 +161,9 @@ const verifyPayment = async (req, res) => {
             console.warn('Appointment service could not be updated:', err.message);
         }
 
-        return res.status(200).json({ 
-            message: 'Payment verified', 
-            data: payment 
+        return res.status(200).json({
+            message: 'Payment verified',
+            data: payment
         });
     } catch (error) {
         console.error(error);
