@@ -9,11 +9,7 @@ try {
     console.warn('Stripe key not found, Stripe features will fail');
 }
 
-/**
- * @desc    Create Stripe checkout session
- * @route   POST /api/payment/create-checkout-session
- * @access  Private
- */
+
 const createCheckoutSession = async (req, res) => {
     try {
         const { appointmentId, amount } = req.body;
@@ -22,7 +18,6 @@ const createCheckoutSession = async (req, res) => {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // --- DEVELOPMENT BYPASS ---
         // Automatically bypass Stripe if we don't have a real API key configured
         if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('...')) {
             console.log('Using Payment Mock (No Stripe Key)');
@@ -31,16 +26,15 @@ const createCheckoutSession = async (req, res) => {
                 patientId: req.user.id,
                 stripeSessionId: 'mock_session_' + Date.now(),
                 amount,
-                status: 'completed', // Auto-complete in mock mode for teammate flow
+                status: 'completed',
             });
 
             return res.status(200).json({
-                url: `/payment-status/${appointmentId}`, // local redirect
+                url: `/payment-status/${appointmentId}`,
                 sessionId: payment.stripeSessionId,
                 payment,
             });
         }
-        // --------------------------
 
         const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
         if (!FRONTEND_URL) {
@@ -58,7 +52,7 @@ const createCheckoutSession = async (req, res) => {
                         product_data: {
                             name: 'Doctor Appointment Payment',
                         },
-                        unit_amount: amount * 100, // Stripe uses cents
+                        unit_amount: amount * 100,
                     },
                     quantity: 1,
                 },
@@ -88,11 +82,7 @@ const createCheckoutSession = async (req, res) => {
     }
 };
 
-/**
- * @desc    Handle Stripe Webhook
- * @route   POST /api/payment/webhook
- * @access  Public
- */
+
 const handleWebhook = async (req, res) => {
     const sig = req.headers['stripe-signature'];
 
@@ -140,11 +130,6 @@ const handleWebhook = async (req, res) => {
     res.status(200).json({ received: true });
 };
 
-/**
- * @desc    Verify payment status and update appointment
- * @route   GET /api/payment/verify/:appointmentId
- * @access  Private
- */
 const verifyPayment = async (req, res) => {
     try {
         const { appointmentId } = req.params;
@@ -172,9 +157,9 @@ const verifyPayment = async (req, res) => {
             console.warn('Appointment service could not be updated:', err.message);
         }
 
-        return res.status(200).json({ 
-            message: 'Payment verified', 
-            data: payment 
+        return res.status(200).json({
+            message: 'Payment verified',
+            data: payment
         });
     } catch (error) {
         console.error(error);
@@ -182,11 +167,6 @@ const verifyPayment = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get payment status
- * @route   GET /api/payment/status/:appointmentId
- * @access  Private
- */
 const getPaymentStatus = async (req, res) => {
     try {
         const payment = await Payment.findOne({
@@ -208,11 +188,7 @@ const getPaymentStatus = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get all payments
- * @route   GET /api/payment
- * @access  Private
- */
+
 const getAllPayments = async (req, res) => {
     try {
         let payments;
@@ -228,11 +204,7 @@ const getAllPayments = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get payment by ID
- * @route   GET /api/payment/:id
- * @access  Private
- */
+
 const getPaymentById = async (req, res) => {
     try {
         const payment = await Payment.findById(req.params.id);
@@ -246,11 +218,7 @@ const getPaymentById = async (req, res) => {
     }
 };
 
-/**
- * @desc    Update payment
- * @route   PUT /api/payment/:id
- * @access  Private/Admin
- */
+
 const updatePayment = async (req, res) => {
     try {
         const payment = await Payment.findById(req.params.id);
@@ -270,11 +238,7 @@ const updatePayment = async (req, res) => {
     }
 };
 
-/**
- * @desc    Delete payment
- * @route   DELETE /api/payment/:id
- * @access  Private/Admin
- */
+
 const deletePayment = async (req, res) => {
     try {
         const payment = await Payment.findById(req.params.id);
