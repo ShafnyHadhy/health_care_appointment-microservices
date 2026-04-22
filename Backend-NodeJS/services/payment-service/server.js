@@ -9,11 +9,8 @@ const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 
-// Middleware
 app.use(cors());
 
-// Webhook needs raw body, not JSON. It's handled in the routes/paymentRoutes.js
-// For all other routes, use JSON parser
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/payment/webhook') {
     next();
@@ -22,20 +19,19 @@ app.use((req, res, next) => {
   }
 });
 
-// Database Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected to paymentdb'))
   .catch(err => console.error('MongoDB Connection Error:', err));
 
-// Routes
+
 app.use('/api/payment', paymentRoutes);
 
-// Health Check
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', service: 'payment-service' });
 });
 
-// Global Error Handler
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Server Error', error: err.message });
