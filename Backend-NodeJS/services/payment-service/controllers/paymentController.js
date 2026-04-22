@@ -125,11 +125,6 @@ const handleWebhook = async (req, res) => {
     res.status(200).json({ received: true });
 };
 
-/**
- * @desc    Verify payment status and update appointment
- * @route   GET /api/payment/verify/:appointmentId
- * @access  Private
- */
 const verifyPayment = async (req, res) => {
     try {
         const { appointmentId } = req.params;
@@ -167,11 +162,6 @@ const verifyPayment = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get payment status
- * @route   GET /api/payment/status/:appointmentId
- * @access  Private
- */
 const getPaymentStatus = async (req, res) => {
     try {
         const payment = await Payment.findOne({
