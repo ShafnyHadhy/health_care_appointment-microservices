@@ -21,7 +21,6 @@ mongoose.connect(process.env.MONGO_URI)
     })
     .catch(err => console.error('MongoDB Connection Error:', err));
 
-
 // Routes
 app.use('/api/admin', adminRoutes);
 
