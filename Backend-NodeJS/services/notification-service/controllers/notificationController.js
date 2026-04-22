@@ -23,7 +23,7 @@ if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {
 const sendSMS = async (to, message) => {
   if (!twilioClient || !process.env.TWILIO_PHONE || !to) return;
 
-  // Format number for Twilio (Ensure E.164 format)
+  // Format number for Twilio 
   let formattedTo = to.trim();
   if (formattedTo.startsWith('+')) {
   } else if (formattedTo.startsWith('0')) {
@@ -88,11 +88,7 @@ const getDetails = async (patientId, doctorId) => {
   }
 };
 
-/**
- * @desc    Send Booking Notification
- * @route   POST /api/notify/booking
- * @access  Internal
- */
+
 const notifyBooking = async (req, res) => {
   try {
     const {
@@ -245,10 +241,7 @@ const notifyBooking = async (req, res) => {
   }
 };
 
-/**
- * @desc    Send Appointment Accepted Notification (Doctor approved, waiting for payment)
- * @route   POST /api/notify/accepted
- */
+
 const notifyAccepted = async (req, res) => {
   try {
     const {
@@ -391,10 +384,6 @@ const notifyCompleted = async (req, res) => {
   }
 };
 
-/**
- * @desc    Send Login Notification
- * @route   POST /api/notify/login
- */
 const notifyLogin = async (req, res) => {
   try {
     const { email, name } = req.body;
