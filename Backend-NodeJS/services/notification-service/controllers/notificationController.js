@@ -184,7 +184,7 @@ const notifyBooking = async (req, res) => {
       await sendSMS(patientPhone, richPatientMsg);
     }
 
-    // === DOCTOR NOTIFICATIONS ===
+    //DOCTOR NOTIFICATIONS
 
     // 1. Send Email to Doctor
     if (realDoctorEmail) {
