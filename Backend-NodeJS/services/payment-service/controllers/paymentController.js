@@ -183,11 +183,7 @@ const getPaymentStatus = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get all payments
- * @route   GET /api/payment
- * @access  Private
- */
+
 const getAllPayments = async (req, res) => {
     try {
         let payments;
@@ -203,11 +199,7 @@ const getAllPayments = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get payment by ID
- * @route   GET /api/payment/:id
- * @access  Private
- */
+
 const getPaymentById = async (req, res) => {
     try {
         const payment = await Payment.findById(req.params.id);
@@ -221,11 +213,7 @@ const getPaymentById = async (req, res) => {
     }
 };
 
-/**
- * @desc    Update payment
- * @route   PUT /api/payment/:id
- * @access  Private/Admin
- */
+
 const updatePayment = async (req, res) => {
     try {
         const payment = await Payment.findById(req.params.id);
@@ -245,11 +233,7 @@ const updatePayment = async (req, res) => {
     }
 };
 
-/**
- * @desc    Delete payment
- * @route   DELETE /api/payment/:id
- * @access  Private/Admin
- */
+
 const deletePayment = async (req, res) => {
     try {
         const payment = await Payment.findById(req.params.id);
