@@ -8,14 +8,12 @@ const protect = async (req, res, next) => {
         req.headers.authorization.startsWith('Bearer')
     ) {
         try {
-            // Get token from header
+
             token = req.headers.authorization.split(' ')[1];
 
-            // Verify token
+
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Add user info to request
-            // Mapping new JWT payload {userId, role, refId} to existing middleware interface
             req.user = { id: decoded.refId, userId: decoded.userId, role: decoded.role };
 
             next();
