@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const apiKey = process.env.GEMINI_API_KEY || '';
 const maskedKey = apiKey.length > 4 ? `...${apiKey.slice(-4)}` : 'MISSING';
 const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 console.log(`[AI SERVICE] 🚀 Initialization: Gemini 1.5 Flash (Active Key: ${maskedKey})`);
 
